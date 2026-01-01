@@ -1,0 +1,2226 @@
+<!DOCTYPE html>
+<!--
+Cost Minimization Problem Interactive Visualization
+Copyright (c) 2025 Kirill Chernomaz (San Francisco State University) | MIT License
+Built with Claude Code
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cost Minimization Problem - Interactive Visualization</title>
+    <!-- Embedded JavaScript Modules -->
+    <script>
+        // Embedded Module: costConfig.js
+        // Configuration for Cost Minimization Interactive Visualization App
+        // Contains parameter definitions, defaults, and visualization settings
+        
+        const CostConfig = {
+        
+          // Cost parameters (shared across all production functions)
+          costParams: {
+            targetOutput: { min: 1, max: 30, step: 1, default: 10, precision: 0, label: 'Target Output (q)' },
+            wageRate: { min: 0.1, max: 6.0, step: 0.1, default: 2.0, precision: 1, label: 'Wage Rate (w)' },
+            rentalRate: { min: 0.1, max: 6.0, step: 0.1, default: 3.0, precision: 1, label: 'Rental Rate (r)' }
+          },
+        
+          // Production function configurations
+          productionFunctions: {
+            'cobb-douglas': {
+              name: 'Cobb-Douglas',
+              mathForm: 'AL^{\\alpha} K^{\\beta}',
+        
+              config: {
+                // Production parameters (production function specific)
+                productionParams: {
+                  cd_A: { min: 0.1, max: 2.5, step: 0.1, default: 1.0, precision: 1, label: 'A (scale parameter)' },
+                  cd_alpha: { min: 0.1, max: 1.5, step: 0.05, default: 0.6, precision: 2, label: 'α (exponent on L)' },
+                  cd_beta: { min: 0.1, max: 1.5, step: 0.05, default: 0.4, precision: 2, label: 'β (exponent on K)' }
+                },
+        
+                // Main visualization bounds (production space: L,K)
+                mainVisualization: {
+                  maxL: 30, maxK: 30,
+                  backgroundCurvePoints: 20,
+                  gridPoints: { x: [5, 10, 15, 20, 25, 30], y: [5, 10, 15, 20, 25, 30] }
+                },
+        
+                // Conditional demand visualization (top right)
+                conditionalDemandVisualization: {
+                  labor: {
+                    maxL: 30, maxW: 6,
+                    gridPoints: { x: [5, 10, 15, 20, 25, 30], y: [1, 2, 3, 4, 5, 6] }
+                  },
+                  capital: {
+                    maxK: 30, maxR: 6,
+                    gridPoints: { x: [5, 10, 15, 20, 25, 30], y: [1, 2, 3, 4, 5, 6] }
+                  }
+                },
+        
+                // Cost expansion path visualization (bottom right)
+                costExpansionVisualization: {
+                  maxQ: 30, maxC: 160,
+                  gridPoints: { x: [5, 10, 15, 20, 25, 30], y: [20, 40, 60, 80, 100, 120, 140, 160] }
+                }
+              }
+            },
+        
+            'ces': {
+              name: 'CES (Constant Elasticity of Substitution)',
+              mathForm: '\\left(aL^{\\frac{\\sigma-1}{\\sigma}} + (1-a)K^{\\frac{\\sigma-1}{\\sigma}}\\right)^{\\frac{\\sigma}{\\sigma-1}\\nu}',
+        
+              config: {
+                // Production parameters (production function specific)
+                productionParams: {
+                  ces_a: { min: 0.1, max: 0.9, step: 0.05, default: 0.5, precision: 2, label: 'a (weight on L)' },
+                  ces_sigma: { min: 0.1, max: 3.0, step: 0.1, default: 1.5, precision: 2, label: 'σ (elasticity of substitution)' },
+                  ces_nu: { min: 0.05, max: 2.0, step: 0.05, default: 1.0, precision: 2, label: 'ν (returns to scale)' }
+                },
+        
+                // Main visualization bounds (production space: L,K)
+                mainVisualization: {
+                  maxL: 30, maxK: 30,
+                  backgroundCurvePoints: 20,
+                  gridPoints: { x: [5, 10, 15, 20, 25, 30], y: [5, 10, 15, 20, 25, 30] }
+                },
+        
+                // Conditional demand visualization (top right)
+                conditionalDemandVisualization: {
+                  labor: {
+                    maxL: 30, maxW: 6,
+                    gridPoints: { x: [5, 10, 15, 20, 25, 30], y: [1, 2, 3, 4, 5, 6] }
+                  },
+                  capital: {
+                    maxK: 30, maxR: 6,
+                    gridPoints: { x: [5, 10, 15, 20, 25, 30], y: [1, 2, 3, 4, 5, 6] }
+                  }
+                },
+        
+                // Cost expansion path visualization (bottom right)
+                costExpansionVisualization: {
+                  maxQ: 30, maxC: 160,
+                  gridPoints: { x: [5, 10, 15, 20, 25, 30], y: [20, 40, 60, 80, 100, 120, 140, 160] }
+                }
+              }
+            },
+        
+            'linear': {
+              name: 'Perfect Substitutes (Linear)',
+              mathForm: 'aL + bK',
+        
+              config: {
+                // Production parameters (production function specific)
+                productionParams: {
+                  lin_a: { min: 0.1, max: 4.0, step: 0.1, default: 1.0, precision: 1, label: 'a (coefficient on L)' },
+                  lin_b: { min: 0.1, max: 4.0, step: 0.1, default: 1.0, precision: 1, label: 'b (coefficient on K)' }
+                },
+        
+                // Main visualization bounds (production space: L,K)
+                mainVisualization: {
+                  maxL: 30, maxK: 30,
+                  backgroundCurvePoints: 20,
+                  gridPoints: { x: [5, 10, 15, 20, 25, 30], y: [5, 10, 15, 20, 25, 30] }
+                },
+        
+                // Conditional demand visualization (top right)
+                conditionalDemandVisualization: {
+                  labor: {
+                    maxL: 30, maxW: 6,
+                    gridPoints: { x: [5, 10, 15, 20, 25, 30], y: [1, 2, 3, 4, 5, 6] }
+                  },
+                  capital: {
+                    maxK: 30, maxR: 6,
+                    gridPoints: { x: [5, 10, 15, 20, 25, 30], y: [1, 2, 3, 4, 5, 6] }
+                  }
+                },
+        
+                // Cost expansion path visualization (bottom right)
+                costExpansionVisualization: {
+                  maxQ: 30, maxC: 160,
+                  gridPoints: { x: [5, 10, 15, 20, 25, 30], y: [20, 40, 60, 80, 100, 120, 140, 160] }
+                }
+              }
+            },
+        
+            'fixed-proportions': {
+              name: 'Perfect Complements (Fixed Proportions)',
+              mathForm: 'A\\min(aL, bK)',
+        
+              config: {
+                // Production parameters (production function specific)
+                productionParams: {
+                  fp_A: { min: 0.1, max: 2.0, step: 0.1, default: 1.0, precision: 1, label: 'A (scale parameter)' },
+                  fp_a: { min: 0.1, max: 4.0, step: 0.1, default: 1.0, precision: 1, label: 'a (coefficient on L)' },
+                  fp_b: { min: 0.1, max: 4.0, step: 0.1, default: 1.0, precision: 1, label: 'b (coefficient on K)' }
+                },
+        
+                // Main visualization bounds (production space: L,K)
+                mainVisualization: {
+                  maxL: 30, maxK: 30,
+                  backgroundCurvePoints: 20,
+                  gridPoints: { x: [5, 10, 15, 20, 25, 30], y: [5, 10, 15, 20, 25, 30] }
+                },
+        
+                // Conditional demand visualization (top right)
+                conditionalDemandVisualization: {
+                  labor: {
+                    maxL: 30, maxW: 6,
+                    gridPoints: { x: [5, 10, 15, 20, 25, 30], y: [1, 2, 3, 4, 5, 6] }
+                  },
+                  capital: {
+                    maxK: 30, maxR: 6,
+                    gridPoints: { x: [5, 10, 15, 20, 25, 30], y: [1, 2, 3, 4, 5, 6] }
+                  }
+                },
+        
+                // Cost expansion path visualization (bottom right)
+                costExpansionVisualization: {
+                  maxQ: 30, maxC: 160,
+                  gridPoints: { x: [5, 10, 15, 20, 25, 30], y: [20, 40, 60, 80, 100, 120, 140, 160] }
+                }
+              }
+            }
+          },
+        
+          // Get current production function configuration
+          getCurrentConfig: (functionType) => {
+            return CostConfig.productionFunctions[functionType];
+          },
+        
+          // Get all parameters for a given production function
+          getAllParams: (functionType) => {
+            const fnConfig = CostConfig.productionFunctions[functionType];
+            return {
+              ...CostConfig.costParams,
+              ...fnConfig.config.productionParams
+            };
+          }
+        
+        };
+        
+        // Make available globally
+        window.CostConfig = CostConfig;
+    </script>
+    <script>
+        // Embedded Module: costMath.js
+        // Cost Minimization Mathematics for Cost Minimization Interactive Visualization App
+        // Contains all mathematical functions for cost minimization and production theory analysis
+        
+        const CostMath = {
+        
+          // Production function definitions with pure mathematical operations
+          productionFunctions: {
+            'cobb-douglas': {
+              // Production function: q = AL^α K^β
+              production: (L, K, config) => {
+                const { cd_A, cd_alpha, cd_beta } = config;
+                const safeL = Math.max(0.001, L);
+                const safeK = Math.max(0.001, K);
+                return cd_A * Math.pow(safeL, cd_alpha) * Math.pow(safeK, cd_beta);
+              },
+        
+              // Marginal product of labor: MPₗ = ∂q/∂L = αAL^(α-1)K^β
+              marginalL: (L, K, config) => {
+                const { cd_A, cd_alpha, cd_beta } = config;
+                const safeL = Math.max(0.001, L);
+                const safeK = Math.max(0.001, K);
+                return cd_A * cd_alpha * Math.pow(safeL, cd_alpha - 1) * Math.pow(safeK, cd_beta);
+              },
+        
+              // Marginal product of capital: MPₖ = ∂q/∂K = βAL^α K^(β-1)
+              marginalK: (L, K, config) => {
+                const { cd_A, cd_alpha, cd_beta } = config;
+                const safeL = Math.max(0.001, L);
+                const safeK = Math.max(0.001, K);
+                return cd_A * cd_beta * Math.pow(safeL, cd_alpha) * Math.pow(safeK, cd_beta - 1);
+              },
+        
+              // Marginal rate of technical substitution: MRTS = -MPₗ/MPₖ = -αK/(βL)
+              mrts: (L, K, config) => {
+                const { cd_alpha, cd_beta } = config;
+                const safeL = Math.max(0.001, L);
+                return -(cd_alpha * K) / (cd_beta * safeL);
+              },
+        
+              // Generate isoquant curve for given output level with adaptive spacing
+              generateIsoquant: (targetOutput, config, maxL = 30, maxK = 30, points = 100) => {
+                const { cd_A, cd_alpha, cd_beta } = config;
+                const curve = [];
+        
+                // Adaptive minimum L calculation: work backwards from maxK
+                // From q = AL^α K^β, solve for L when K = maxK: L = (q/(A*maxK^β))^(1/α)
+                const LMin = Math.max(0.001, Math.pow(targetOutput / (cd_A * Math.pow(maxK, cd_beta)), 1 / cd_alpha));
+        
+                for (let i = 0; i <= points; i++) {
+                  const t = i / points; // t from 0 to 1
+                  // Logarithmic spacing: more points near LMin where curve is steepest
+                  const L = LMin + (maxL - LMin) * (Math.exp(t * Math.log(10)) - 1) / 9;
+        
+                  // From q = AL^α K^β, solve for K: K = (q/(AL^α))^(1/β)
+                  const K = Math.pow(targetOutput / (cd_A * Math.pow(L, cd_alpha)), 1 / cd_beta);
+        
+                  // Remove bound checking - rely on canvas clipping instead
+                  if (K > 0 && isFinite(K)) {
+                    curve.push({ L, K });
+                  }
+                }
+        
+                return curve;
+              },
+        
+              // Calculate min and max possible output given parameter ranges
+              getQuantityRange: (paramRanges, maxL, maxK) => {
+                // Min: smallest A, α, β at smallest L, K
+                const minQ = paramRanges.cd_A.min * Math.pow(0.1, paramRanges.cd_alpha.min) * Math.pow(0.1, paramRanges.cd_beta.min);
+                // Max: largest A, α, β at largest L, K
+                const maxQ = paramRanges.cd_A.max * Math.pow(maxL, paramRanges.cd_alpha.max) * Math.pow(maxK, paramRanges.cd_beta.max);
+                return { minQ, maxQ };
+              }
+            },
+        
+            'ces': {
+              // CES Production function: q = (aL^ρ + (1-a)K^ρ)^(ν/ρ) where ρ = (σ-1)/σ
+              production: (L, K, config) => {
+                const { ces_a, ces_sigma, ces_nu } = config;
+                const safeL = Math.max(0.001, L);
+                const safeK = Math.max(0.001, K);
+                const nu = ces_nu ?? 1.0; // Default to 1 if not specified
+        
+                const rho = (ces_sigma - 1) / ces_sigma;
+                const EPS = 1e-6;
+        
+                // Handle special case: ρ ≈ 0 (σ ≈ 1) → Cobb-Douglas with returns to scale
+                if (Math.abs(rho) < EPS) {
+                  // Use Cobb-Douglas formula with returns to scale: q = (L^a * K^(1-a))^ν
+                  return Math.pow(Math.pow(safeL, ces_a) * Math.pow(safeK, 1 - ces_a), nu);
+                }
+        
+                const term1 = ces_a * Math.pow(safeL, rho);
+                const term2 = (1 - ces_a) * Math.pow(safeK, rho);
+        
+                return Math.pow(term1 + term2, nu / rho);
+              },
+        
+              // Marginal product of labor for CES
+              // MPₗ = ∂q/∂L = (ν/ρ) * (aL^ρ + (1-a)K^ρ)^(ν/ρ - 1) * a * ρ * L^(ρ-1)
+              //     = ν * a * L^(ρ-1) * (aL^ρ + (1-a)K^ρ)^(ν/ρ - 1)
+              marginalL: (L, K, config) => {
+                const { ces_a, ces_sigma, ces_nu } = config;
+                const safeL = Math.max(0.001, L);
+                const safeK = Math.max(0.001, K);
+                const nu = ces_nu ?? 1.0;
+        
+                const rho = (ces_sigma - 1) / ces_sigma;
+                const EPS = 1e-6;
+        
+                // Handle special case: ρ ≈ 0 (σ ≈ 1) → Cobb-Douglas marginal L with returns to scale
+                if (Math.abs(rho) < EPS) {
+                  // Cobb-Douglas marginal L with returns to scale: MPₗ = ν * a * L^(a-1) * K^(1-a) * (L^a * K^(1-a))^(ν-1)
+                  const base = Math.pow(safeL, ces_a) * Math.pow(safeK, 1 - ces_a);
+                  return nu * ces_a * Math.pow(safeL, ces_a - 1) * Math.pow(safeK, 1 - ces_a) * Math.pow(base, nu - 1);
+                }
+        
+                const term1 = ces_a * Math.pow(safeL, rho);
+                const term2 = (1 - ces_a) * Math.pow(safeK, rho);
+                const totalTerm = Math.pow(term1 + term2, nu / rho - 1);
+        
+                return nu * ces_a * Math.pow(safeL, rho - 1) * totalTerm;
+              },
+        
+              // Marginal product of capital for CES
+              // MPₖ = ∂q/∂K = ν * (1-a) * K^(ρ-1) * (aL^ρ + (1-a)K^ρ)^(ν/ρ - 1)
+              marginalK: (L, K, config) => {
+                const { ces_a, ces_sigma, ces_nu } = config;
+                const safeL = Math.max(0.001, L);
+                const safeK = Math.max(0.001, K);
+                const nu = ces_nu ?? 1.0;
+        
+                const rho = (ces_sigma - 1) / ces_sigma;
+                const EPS = 1e-6;
+        
+                // Handle special case: ρ ≈ 0 (σ ≈ 1) → Cobb-Douglas marginal K with returns to scale
+                if (Math.abs(rho) < EPS) {
+                  // Cobb-Douglas marginal K with returns to scale: MPₖ = ν * (1-a) * L^a * K^(-a) * (L^a * K^(1-a))^(ν-1)
+                  const base = Math.pow(safeL, ces_a) * Math.pow(safeK, 1 - ces_a);
+                  return nu * (1 - ces_a) * Math.pow(safeL, ces_a) * Math.pow(safeK, -ces_a) * Math.pow(base, nu - 1);
+                }
+        
+                const term1 = ces_a * Math.pow(safeL, rho);
+                const term2 = (1 - ces_a) * Math.pow(safeK, rho);
+                const totalTerm = Math.pow(term1 + term2, nu / rho - 1);
+        
+                return nu * (1 - ces_a) * Math.pow(safeK, rho - 1) * totalTerm;
+              },
+        
+              // MRTS for CES: MRTS = -(a/(1-a))(K/L)^(1/σ)
+              mrts: (L, K, config) => {
+                const { ces_a, ces_sigma } = config;
+                const safeL = Math.max(0.001, L);
+                return -(ces_a / (1 - ces_a)) * Math.pow(K / safeL, 1 / ces_sigma);
+              },
+        
+              // Generate isoquant curve for CES function with adaptive spacing
+              generateIsoquant: (targetOutput, config, maxL = 30, maxK = 30, points = 100) => {
+                const { ces_a, ces_sigma, ces_nu } = config;
+                const curve = [];
+                const EPS = 1e-6;
+                const nu = ces_nu ?? 1.0;
+        
+                // Convert sigma to rho for internal calculations
+                const rho = (ces_sigma - 1) / ces_sigma;
+        
+                // Handle special cases
+                if (Math.abs(rho) < EPS) {
+                  // ρ ≈ 0: Cobb-Douglas case with returns to scale
+                  // For q = (L^a * K^(1-a))^ν = targetOutput, we need L^a * K^(1-a) = targetOutput^(1/ν)
+                  const adjustedOutput = Math.pow(targetOutput, 1 / nu);
+                  return CostMath.productionFunctions['cobb-douglas'].generateIsoquant(
+                    adjustedOutput,
+                    { cd_A: 1, cd_alpha: ces_a, cd_beta: 1 - ces_a },
+                    maxL,
+                    maxK,
+                    points
+                  );
+                } else if (Math.abs(rho - 1) < EPS) {
+                  // ρ ≈ 1: Perfect substitutes case with returns to scale
+                  // For q = (aL + (1-a)K)^ν = targetOutput, we need aL + (1-a)K = targetOutput^(1/ν)
+                  const adjustedOutput = Math.pow(targetOutput, 1 / nu);
+                  return CostMath.productionFunctions['linear'].generateIsoquant(
+                    adjustedOutput,
+                    { lin_a: ces_a, lin_b: 1 - ces_a },
+                    maxL,
+                    points
+                  );
+                } else {
+                  // General CES case: analytical solution
+                  // From q = (aL^ρ + (1-a)K^ρ)^(ν/ρ)
+                  // Solve for K: aL^ρ + (1-a)K^ρ = q^(ρ/ν)
+                  // K = ((q^(ρ/ν) - aL^ρ)/(1-a))^(1/ρ)
+        
+                  // Find minimum valid L by working backwards from K = maxK
+                  const KLimit = maxK;
+                  const qPowered = Math.pow(targetOutput, rho / nu);
+                  const term = (qPowered - (1 - ces_a) * Math.pow(KLimit, rho)) / ces_a;
+                  const LMin = Math.max(0.001, term > 0 ? Math.pow(term, 1 / rho) : 0.001);
+        
+                  // Add boundary point explicitly to avoid numerical precision errors with extreme exponents
+                  // When ρ is very negative (low σ), recalculating K from LMin causes floating-point errors
+                  if (LMin < maxL && term > 0) {
+                    curve.push({ L: LMin, K: maxK });
+                  }
+        
+                  for (let i = 1; i <= points; i++) {  // Start from i=1 to skip LMin recalculation
+                    const t = i / points;  // t from 0 to 1
+                    // Logarithmic spacing: more points near LMin where curve is steepest
+                    const L = LMin + (maxL - LMin) * (Math.exp(t * Math.log(10)) - 1) / 9;
+                    if (L <= 0.001) continue;
+        
+                    // Analytical solution with returns to scale
+                    const termCalc = (qPowered - ces_a * Math.pow(L, rho)) / (1 - ces_a);
+                    if (termCalc > 0) {
+                      const K = Math.pow(termCalc, 1 / rho);
+                      if (K > 0 && isFinite(K)) {
+                        curve.push({ L, K });
+                      }
+                    }
+                  }
+                }
+        
+                return curve;
+              },
+        
+              // Calculate min and max possible output given parameter ranges
+              getQuantityRange: (paramRanges, maxL, maxK) => {
+                // Min: smallest parameters at smallest L, K
+                const minRho = (paramRanges.ces_sigma.min - 1) / paramRanges.ces_sigma.min;
+                const minNu = paramRanges.ces_nu.min;
+                const minA = paramRanges.ces_a.min;
+                const minTerm = minA * Math.pow(0.1, minRho) + (1 - minA) * Math.pow(0.1, minRho);
+                const minQ = Math.pow(minTerm, minNu / minRho);
+        
+                // Max: largest parameters at largest L, K
+                const maxRho = (paramRanges.ces_sigma.max - 1) / paramRanges.ces_sigma.max;
+                const maxNu = paramRanges.ces_nu.max;
+                const maxA = paramRanges.ces_a.max;
+                const maxTerm = maxA * Math.pow(maxL, maxRho) + (1 - maxA) * Math.pow(maxK, maxRho);
+                const maxQ = Math.pow(maxTerm, maxNu / maxRho);
+        
+                return { minQ, maxQ };
+              }
+            },
+        
+            'linear': {
+              // Linear production function: q = aL + bK
+              production: (L, K, config) => {
+                const { lin_a, lin_b } = config;
+                return lin_a * L + lin_b * K;
+              },
+        
+              // Marginal product of labor: MPₗ = a (constant)
+              marginalL: (L, K, config) => {
+                const { lin_a } = config;
+                return lin_a;
+              },
+        
+              // Marginal product of capital: MPₖ = b (constant)
+              marginalK: (L, K, config) => {
+                const { lin_b } = config;
+                return lin_b;
+              },
+        
+              // MRTS for linear: MRTS = -a/b (constant)
+              mrts: (L, K, config) => {
+                const { lin_a, lin_b } = config;
+                return -lin_a / lin_b;
+              },
+        
+              // Generate isoquant curve (straight line) for linear function
+              generateIsoquant: (targetOutput, config, maxL = 30, points = 100) => {
+                const { lin_a, lin_b } = config;
+                const curve = [];
+        
+                // For q = aL + bK, isoquant is: K = (q - aL)/b
+                for (let i = 0; i <= points; i++) {
+                  const L = (i / points) * maxL;
+                  const K = (targetOutput - lin_a * L) / lin_b;
+        
+                  // Remove bound checking - rely on canvas clipping instead
+                  // Linear functions are straight lines, so no need for adaptive spacing
+                  if (isFinite(K)) {
+                    curve.push({ L, K });
+                  }
+                }
+        
+                return curve;
+              },
+        
+              // Calculate min and max possible output given parameter ranges
+              getQuantityRange: (paramRanges, maxL, maxK) => {
+                // Min: smallest a, b at smallest L, K
+                const minQ = paramRanges.lin_a.min * 0.1 + paramRanges.lin_b.min * 0.1;
+                // Max: largest a, b at largest L, K
+                const maxQ = paramRanges.lin_a.max * maxL + paramRanges.lin_b.max * maxK;
+                return { minQ, maxQ };
+              }
+            },
+        
+            'fixed-proportions': {
+              // Fixed-proportions production function: q = A * min{aL, bK}
+              production: (L, K, config) => {
+                const { fp_A, fp_a, fp_b } = config;
+                return fp_A * Math.min(fp_a * L, fp_b * K);
+              },
+        
+              // Marginal product of labor: MPₗ = A*a if aL < bK, 0 otherwise
+              marginalL: (L, K, config) => {
+                const { fp_A, fp_a, fp_b } = config;
+                return (fp_a * L < fp_b * K) ? fp_A * fp_a : 0;
+              },
+        
+              // Marginal product of capital: MPₖ = A*b if bK < aL, 0 otherwise
+              marginalK: (L, K, config) => {
+                const { fp_A, fp_a, fp_b } = config;
+                return (fp_b * K < fp_a * L) ? fp_A * fp_b : 0;
+              },
+        
+              // MRTS: Undefined at kink, 0 on horizontal, ∞ on vertical
+              mrts: (L, K, config) => {
+                const { fp_a, fp_b } = config;
+                const aL = fp_a * L;
+                const bK = fp_b * K;
+        
+                if (Math.abs(aL - bK) < 0.01) return NaN; // At the kink
+                return (aL < bK) ? 0 : -Infinity;
+              },
+        
+              // Generate L-shaped isoquant curve
+              generateIsoquant: (targetOutput, config, maxL = 30, maxK = 30, points = 100) => {
+                const { fp_A, fp_a, fp_b } = config;
+        
+                if (targetOutput <= 0 || fp_A <= 0) {
+                  return {
+                    points: [],
+                    curveType: 'L-shaped',
+                    metadata: {
+                      outputLevel: targetOutput,
+                      cornerL: 0,
+                      cornerK: 0,
+                      maxL: maxL,
+                      maxK: maxK
+                    }
+                  };
+                }
+        
+                // Corner point where aL = bK and q = A*aL = A*bK
+                const cornerL = targetOutput / (fp_A * fp_a);
+                const cornerK = targetOutput / (fp_A * fp_b);
+        
+                return {
+                  points: [], // Empty - L-shapes handled by drawLShape method
+                  curveType: 'L-shaped',
+                  metadata: {
+                    outputLevel: targetOutput,
+                    cornerL: Math.max(0.001, cornerL),
+                    cornerK: Math.max(0.001, cornerK),
+                    maxL: maxL,
+                    maxK: maxK
+                  }
+                };
+              },
+        
+              // Calculate min and max possible output given parameter ranges
+              getQuantityRange: (paramRanges, maxL, maxK) => {
+                // Min: smallest A, a, b at smallest inputs
+                const minQ = paramRanges.fp_A.min * Math.min(paramRanges.fp_a.min * 0.1, paramRanges.fp_b.min * 0.1);
+                // Max: largest A, a, b at largest inputs
+                const maxQ = paramRanges.fp_A.max * Math.min(paramRanges.fp_a.max * maxL, paramRanges.fp_b.max * maxK);
+                return { minQ, maxQ };
+              }
+            }
+          },
+        
+          // Create 3D production surface from production function parameters
+          create3DProductionSurface: (functionType, config, bounds = {}, resolution = 40) => {
+            const { maxL = 30, maxK = 30, maxQ = 60 } = bounds;
+            const productionFn = CostMath.productionFunctions[functionType].production;
+            const vertices = [];
+            const faces = [];
+        
+            // Generate vertices with production math
+            for (let i = 0; i <= resolution; i++) {
+              for (let j = 0; j <= resolution; j++) {
+                const L = (i / resolution) * maxL;
+                const K = (j / resolution) * maxK;
+                const q = productionFn(L, K, config);
+        
+                // Map production coordinates to generic 3D coordinates
+                // Capital on X-axis, Output on Y-axis, Labor on Z-axis
+                vertices.push({ x: K, y: q, z: L });
+              }
+            }
+        
+            // Generate faces (triangles for mesh)
+            for (let i = 0; i < resolution; i++) {
+              for (let j = 0; j < resolution; j++) {
+                const idx = i * (resolution + 1) + j;
+        
+                // Two triangles per square
+                faces.push([idx, idx + 1, idx + resolution + 1]);
+                faces.push([idx + 1, idx + resolution + 2, idx + resolution + 1]);
+              }
+            }
+        
+            const surfaceData = { vertices, faces };
+        
+            // Call generic canvasUtils function
+            return CanvasUtils.create3DSurface(surfaceData, resolution);
+          },
+        
+        
+          // Generate total product curves for 2D analysis
+          generateTotalProductCurve: (functionType, config, inputType = 'L', fixedLevel = 10, maxInput = 30, points = 100) => {
+            const productionFn = CostMath.productionFunctions[functionType];
+        
+            const curve = [];
+        
+            for (let i = 0; i <= points; i++) {
+              const input = (i / points) * maxInput + 0.1;
+              const L = inputType === 'L' ? input : fixedLevel;
+              const K = inputType === 'K' ? input : fixedLevel;
+        
+              const totalProduct = productionFn.production(L, K, config);
+        
+              curve.push({
+                input,
+                output: totalProduct,
+                L,
+                K
+              });
+            }
+        
+            return curve;
+          },
+        
+        
+          // ========================================================================
+          // Cost Minimization Problem (CMP) Solvers - To be implemented in Phase 2
+          // ========================================================================
+        
+          // Solve cost minimization problem for each production function
+          // Returns: { L, K, totalCost, mrts, isCornerSolution }
+          solveCMP: (targetOutput, wageRate, rentalRate, functionType, config) => {
+            if (targetOutput <= 0 || wageRate <= 0 || rentalRate <= 0) {
+              return { L: 0.001, K: 0.001, totalCost: 0, mrts: NaN, isCornerSolution: false };
+            }
+        
+            // Route to appropriate solver based on production function type
+            switch (functionType) {
+              case 'cobb-douglas':
+                return CostMath.solveCMP_CobbDouglas(targetOutput, wageRate, rentalRate, config);
+              case 'ces':
+                return CostMath.solveCMP_CES(targetOutput, wageRate, rentalRate, config);
+              case 'linear':
+                return CostMath.solveCMP_Linear(targetOutput, wageRate, rentalRate, config);
+              case 'fixed-proportions':
+                return CostMath.solveCMP_FixedProportions(targetOutput, wageRate, rentalRate, config);
+              default:
+                return { L: 0.001, K: 0.001, totalCost: 0, mrts: NaN, isCornerSolution: false };
+            }
+          },
+        
+          // Cobb-Douglas CMP: q̄ = AL^α K^β, minimize wL + rK
+          solveCMP_CobbDouglas: (targetOutput, wageRate, rentalRate, config) => {
+            const { cd_A, cd_alpha, cd_beta } = config;
+        
+            // Tangency condition: MRTS = w/r → (α/β)(K/L) = w/r → K = (βw/αr)L
+            // Substituting into constraint: q̄ = AL^α [(βw/αr)L]^β
+            // Solving: L* = [q̄/(A(βw/αr)^β)]^(1/(α+β))
+        
+            const factorRatio = (cd_beta * wageRate) / (cd_alpha * rentalRate);
+            const denominator = cd_A * Math.pow(factorRatio, cd_beta);
+            const exponent = 1 / (cd_alpha + cd_beta);
+        
+            const L = Math.pow(targetOutput / denominator, exponent);
+            const K = factorRatio * L;
+            const totalCost = wageRate * L + rentalRate * K;
+        
+            // Calculate MRTS at optimal point
+            const mrts = CostMath.productionFunctions['cobb-douglas'].mrts(L, K, config);
+        
+            return { L, K, totalCost, mrts, isCornerSolution: false };
+          },
+        
+          // CES CMP: q̄ = (aL^ρ + (1-a)K^ρ)^(ν/ρ), minimize wL + rK
+          solveCMP_CES: (targetOutput, wageRate, rentalRate, config) => {
+            const { ces_a, ces_sigma, ces_nu } = config;
+            const nu = ces_nu ?? 1.0;
+            const rho = (ces_sigma - 1) / ces_sigma;
+            const EPS = 1e-6;
+        
+            // Special case: ρ ≈ 0 (σ ≈ 1) → Cobb-Douglas with returns to scale
+            if (Math.abs(rho) < EPS) {
+              // Use Cobb-Douglas formula with a as labor exponent and adjusted output
+              // For q = (L^a * K^(1-a))^ν, the isoquant is the same as L^a * K^(1-a) = q^(1/ν)
+              const adjustedOutput = Math.pow(targetOutput, 1 / nu);
+              const cd_config = { cd_A: 1, cd_alpha: ces_a, cd_beta: 1 - ces_a };
+              return CostMath.solveCMP_CobbDouglas(adjustedOutput, wageRate, rentalRate, cd_config);
+            }
+        
+            // Special case: ρ ≈ 1 (σ → ∞) → Perfect substitutes with returns to scale
+            if (Math.abs(rho - 1) < EPS) {
+              const adjustedOutput = Math.pow(targetOutput, 1 / nu);
+              const lin_config = { lin_a: ces_a, lin_b: 1 - ces_a };
+              return CostMath.solveCMP_Linear(adjustedOutput, wageRate, rentalRate, lin_config);
+            }
+        
+            // General CES case with returns to scale:
+            // FOC tangency: MRTS = -w/r, where MRTS = -(a/(1-a))(K/L)^(1/σ) and 1/σ = -(ρ-1)
+            // Note: MRTS is independent of ν (returns to scale parameter)
+            // So: (a/(1-a))(K/L)^(-(ρ-1)) = w/r
+            // Optimal factor ratio: K/L = [(1-a)w/(ar)]^(-1/(ρ-1)) = [ar/(1-a)w]^(1/(ρ-1))
+        
+            const base = ((1 - ces_a) * wageRate) / (ces_a * rentalRate);
+            const factorRatio = Math.pow(base, -1 / (rho - 1)); // K/L (note negative exponent)
+        
+            // Conditional labor demand from constraint with returns to scale:
+            // From q̄ = [aL^ρ + (1-a)K^ρ]^(ν/ρ) and K/L = [(1-a)w/(ar)]^(-1/(ρ-1))
+            // We get: aL^ρ + (1-a)K^ρ = q̄^(ρ/ν)
+            // L^ρ [a + (1-a)(K/L)^ρ] = q̄^(ρ/ν)
+            // L*(w,r,q̄) = (q̄^(ρ/ν) / [a + (1-a)(K/L)^ρ])^(1/ρ)
+            const qPowered = Math.pow(targetOutput, rho / nu);
+            const innerTerm = ces_a + (1 - ces_a) * Math.pow(base, -rho / (rho - 1));
+            const L = Math.pow(qPowered / innerTerm, 1 / rho);
+            const K = factorRatio * L;
+        
+            const totalCost = wageRate * L + rentalRate * K;
+            const mrts = CostMath.productionFunctions['ces'].mrts(L, K, config);
+        
+            return { L, K, totalCost, mrts, isCornerSolution: false };
+          },
+        
+          // Linear (Perfect Substitutes) CMP: q̄ = aL + bK, minimize wL + rK
+          solveCMP_Linear: (targetOutput, wageRate, rentalRate, config) => {
+            const { lin_a, lin_b } = config;
+        
+            // Corner solution: compare cost per unit of output for each input
+            // Cost per unit using only labor: w/a
+            // Cost per unit using only capital: r/b
+        
+            const costPerUnitLabor = wageRate / lin_a;
+            const costPerUnitCapital = rentalRate / lin_b;
+            const EPS = 1e-6;
+        
+            if (Math.abs(costPerUnitLabor - costPerUnitCapital) < EPS) {
+              // Indifferent - multiple optimal solutions
+              // Return a mix for visualization purposes (midpoint of line)
+              const L = targetOutput / (2 * lin_a);
+              const K = targetOutput / (2 * lin_b);
+              const totalCost = wageRate * L + rentalRate * K;
+              const mrts = -lin_a / lin_b;
+              return { L, K, totalCost, mrts, isCornerSolution: false };
+            }
+            else if (costPerUnitLabor < costPerUnitCapital) {
+              // Use only labor
+              const L = targetOutput / lin_a;
+              const K = 0.001; // Minimal capital
+              const totalCost = wageRate * L + rentalRate * K;
+              const mrts = -lin_a / lin_b;
+              return { L, K, totalCost, mrts, isCornerSolution: true };
+            }
+            else {
+              // Use only capital
+              const L = 0.001; // Minimal labor
+              const K = targetOutput / lin_b;
+              const totalCost = wageRate * L + rentalRate * K;
+              const mrts = -lin_a / lin_b;
+              return { L, K, totalCost, mrts, isCornerSolution: true };
+            }
+          },
+        
+          // Fixed-proportions (Perfect Complements) CMP: q̄ = A·min{aL, bK}, minimize wL + rK
+          solveCMP_FixedProportions: (targetOutput, wageRate, rentalRate, config) => {
+            const { fp_A, fp_a, fp_b } = config;
+        
+            // At optimum: no waste, so aL = bK
+            // From constraint: aL = q̄/A → L* = q̄/(Aa)
+            // From optimum condition: K* = (a/b)L* = q̄/(Ab)
+        
+            const L = targetOutput / (fp_A * fp_a);
+            const K = targetOutput / (fp_A * fp_b);
+            const totalCost = wageRate * L + rentalRate * K;
+        
+            // MRTS is undefined at the kink
+            const mrts = NaN;
+        
+            return { L, K, totalCost, mrts, isCornerSolution: false };
+          },
+        
+          // Generate conditional factor demand curve for labor: L*(w|r,q̄)
+          // Shows how optimal labor varies with wage, holding r and q̄ constant
+          generateConditionalLaborDemand: (wageRange, rentalRate, targetOutput, functionType, config, points = 50) => {
+            const { min: minWage, max: maxWage } = wageRange;
+            const curve = [];
+        
+            for (let i = 0; i <= points; i++) {
+              const wage = minWage + (i / points) * (maxWage - minWage);
+        
+              // Solve CMP at this wage rate
+              const solution = CostMath.solveCMP(targetOutput, wage, rentalRate, functionType, config);
+        
+              curve.push({
+                wageRate: wage,
+                laborDemand: solution.L,
+                capitalDemand: solution.K,
+                totalCost: solution.totalCost,
+                isCornerSolution: solution.isCornerSolution
+              });
+            }
+        
+            return curve;
+          },
+        
+          // Generate conditional factor demand curve for capital: K*(r|w,q̄)
+          // Shows how optimal capital varies with rental rate, holding w and q̄ constant
+          generateConditionalCapitalDemand: (rentalRateRange, wageRate, targetOutput, functionType, config, points = 50) => {
+            const { min: minRentalRate, max: maxRentalRate } = rentalRateRange;
+            const curve = [];
+        
+            for (let i = 0; i <= points; i++) {
+              const rentalRate = minRentalRate + (i / points) * (maxRentalRate - minRentalRate);
+        
+              // Solve CMP at this rental rate
+              const solution = CostMath.solveCMP(targetOutput, wageRate, rentalRate, functionType, config);
+        
+              curve.push({
+                rentalRate: rentalRate,
+                capitalDemand: solution.K,
+                laborDemand: solution.L,
+                totalCost: solution.totalCost,
+                isCornerSolution: solution.isCornerSolution
+              });
+            }
+        
+            return curve;
+          },
+        
+          // Generate cost expansion path: C(w,r,q̄)
+          // Shows total cost function - how cost increases with output requirement
+          generateCostExpansionPath: (outputRange, wageRate, rentalRate, functionType, config, points = 50) => {
+            const { min: minOutput, max: maxOutput } = outputRange;
+            const curve = [];
+        
+            for (let i = 0; i <= points; i++) {
+              const output = minOutput + (i / points) * (maxOutput - minOutput);
+        
+              // Solve CMP at this output level
+              const solution = CostMath.solveCMP(output, wageRate, rentalRate, functionType, config);
+        
+              curve.push({
+                output: output,
+                totalCost: solution.totalCost,
+                laborDemand: solution.L,
+                capitalDemand: solution.K,
+                isCornerSolution: solution.isCornerSolution
+              });
+            }
+        
+            return curve;
+          },
+        
+          // Generate isocost line endpoints for drawing
+          // For line: wL + rK = C
+          getIsocostLineEndpoints: (totalCost, wageRate, rentalRate, maxL, maxK) => {
+            // Returns { laborIntercept, capitalIntercept }
+            const laborIntercept = totalCost / wageRate;  // When K = 0
+            const capitalIntercept = totalCost / rentalRate;  // When L = 0
+            return { laborIntercept, capitalIntercept };
+          },
+        
+          // Calculate dynamic output levels for background isoquants
+          // Samples points along diagonal from (0,0) to (maxL, maxK) and calculates output at each point
+          calculateDynamicOutputLevels: (functionType, config, maxL, maxK, numPoints) => {
+            const productionFn = CostMath.productionFunctions[functionType];
+        
+            if (!productionFn || !productionFn.production) {
+              console.error(`Production calculation not available for ${functionType}`);
+              return [];
+            }
+        
+            const outputLevels = [];
+        
+            // Generate points along the ray from origin to (maxL, maxK)
+            for (let i = 1; i <= numPoints; i++) {
+              const t = i / (numPoints + 1); // Avoid points at (0,0) and (maxL, maxK)
+              const L = t * maxL;
+              const K = t * maxK;
+        
+              try {
+                // Calculate output at this point
+                const output = productionFn.production(L, K, config);
+                outputLevels.push(output);
+              } catch (error) {
+                console.warn(`Error calculating output at (${L.toFixed(2)}, ${K.toFixed(2)}):`, error);
+              }
+            }
+        
+            // Sort output levels to ensure they are in ascending order
+            return outputLevels.sort((a, b) => a - b);
+          }
+        
+        };
+        
+        // Make available globally
+        window.CostMath = CostMath;
+    </script>
+    <script>
+        // Embedded Module: canvasUtils.js
+        // Canvas Utilities for EMP Visualization
+        // Provides drawing and coordinate transformation utilities
+        
+        const CanvasUtils = {
+          
+          // Initialize high-DPI canvas
+          initCanvas: (canvas, width = 500, height = 400) => {
+            const devicePixelRatio = window.devicePixelRatio || 1;
+            
+            canvas.width = width * devicePixelRatio;
+            canvas.height = height * devicePixelRatio;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            
+            const ctx = canvas.getContext('2d');
+            ctx.scale(devicePixelRatio, devicePixelRatio);
+            
+            // Clear with white background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+            
+            return { ctx, width, height };
+          },
+        
+          // Calculate responsive margins
+          calculateMargins: (width, height) => {
+            const minMargin = 30;
+            const marginRatio = 0.08;
+            
+            return {
+              top: Math.max(minMargin, Math.round(height * marginRatio)),
+              bottom: Math.max(minMargin + 15, Math.round(height * (marginRatio + 0.03))), // Space for x-axis labels and title
+              left: Math.max(minMargin + 12, Math.round(width * (marginRatio + 0.03))), // Space for y-axis labels and title
+              right: Math.max(minMargin, Math.round(width * marginRatio))
+            };
+          },
+        
+          // Create coordinate transformation
+          createTransform: (margins, width, height, maxX, maxY, minX = 0, minY = 0) => {
+            const drawWidth = width - margins.left - margins.right;
+            const drawHeight = height - margins.top - margins.bottom;
+            const scaleX = drawWidth / (maxX - minX);
+            const scaleY = drawHeight / (maxY - minY);
+            
+            return {
+              toCanvas: (x, y) => ({
+                x: margins.left + (x - minX) * scaleX,
+                y: height - margins.bottom - (y - minY) * scaleY
+              }),
+              fromCanvas: (canvasX, canvasY) => ({
+                x: minX + (canvasX - margins.left) / scaleX,
+                y: minY + (height - margins.bottom - canvasY) / scaleY
+              }),
+              scaleX,
+              scaleY,
+              drawWidth,
+              drawHeight
+            };
+          },
+        
+          // Draw coordinate axes
+          drawAxes: (ctx, margins, width, height, labelX = 'Quantity X', labelY = 'Quantity Y') => {
+            ctx.strokeStyle = '#374151';
+            ctx.lineWidth = 2;
+            
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(margins.left, height - margins.bottom);
+            ctx.lineTo(width - margins.right, height - margins.bottom);
+            ctx.stroke();
+            
+            // Y-axis  
+            ctx.beginPath();
+            ctx.moveTo(margins.left, height - margins.bottom);
+            ctx.lineTo(margins.left, margins.top);
+            ctx.stroke();
+            
+            // Axis labels
+            const fontSize = Math.max(12, Math.round(width * 0.024));
+            ctx.fillStyle = '#374151';
+            ctx.font = `${fontSize}px sans-serif`;
+            
+            // X-axis label
+            ctx.textAlign = 'center';
+            ctx.fillText(labelX, width / 2, height - 10);
+            
+            // Y-axis label (rotated)
+            ctx.save();
+            ctx.translate(15, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillText(labelY, 0, 0);
+            ctx.restore();
+            
+            return fontSize;
+          },
+        
+        
+          // Draw grid lines
+          drawGrid: (ctx, margins, width, height, transform, gridConfig = null) => {
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 1;
+            
+            if (!gridConfig) return;
+            
+            const { xPoints = [], yPoints = [] } = gridConfig;
+            
+            // Vertical grid lines
+            for (const x of xPoints) {
+              const pos = transform.toCanvas(x, 0);
+              ctx.beginPath();
+              ctx.moveTo(pos.x, margins.top);
+              ctx.lineTo(pos.x, height - margins.bottom);
+              ctx.stroke();
+            }
+            
+            // Horizontal grid lines
+            for (const y of yPoints) {
+              const pos = transform.toCanvas(0, y);
+              ctx.beginPath();
+              ctx.moveTo(margins.left, pos.y);
+              ctx.lineTo(width - margins.right, pos.y);
+              ctx.stroke();
+            }
+          },
+        
+          // Draw tick marks and labels
+          drawTicks: (ctx, margins, width, height, transform, gridConfig = null) => {
+            const fontSize = Math.max(10, Math.round(width * 0.02));
+            ctx.fillStyle = '#6b7280';
+            ctx.font = `${fontSize}px sans-serif`;
+            
+            if (!gridConfig) return;
+            
+            const { xPoints = [], yPoints = [] } = gridConfig;
+            
+            // X-axis ticks
+            ctx.textAlign = 'center';
+            for (const x of xPoints) {
+              const pos = transform.toCanvas(x, 0);
+              const label = x % 1 === 0 ? x.toString() : x.toFixed(1);
+              ctx.fillText(label, pos.x, height - margins.bottom + 20);
+            }
+            
+            // Y-axis ticks
+            ctx.textAlign = 'right';
+            for (const y of yPoints) {
+              const pos = transform.toCanvas(0, y);
+              const label = y % 1 === 0 ? y.toString() : y.toFixed(1);
+              ctx.fillText(label, margins.left - 8, pos.y + fontSize/3);
+            }
+          },
+        
+          // Draw a curve from data points
+          drawCurve: (ctx, points, transform, style = {}) => {
+            if (!points || points.length === 0) return;
+            
+            const {
+              color = '#1d4ed8',
+              lineWidth = 2,
+              dash = []
+            } = style;
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.setLineDash(dash);
+            
+            ctx.beginPath();
+            let firstPoint = true;
+            
+            for (const point of points) {
+              if (isFinite(point.x) && isFinite(point.y)) {
+                const canvasPos = transform.toCanvas(point.x, point.y);
+                if (firstPoint) {
+                  ctx.moveTo(canvasPos.x, canvasPos.y);
+                  firstPoint = false;
+                } else {
+                  ctx.lineTo(canvasPos.x, canvasPos.y);
+                }
+              }
+            }
+            
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset dash
+          },
+        
+          // Draw L-shaped curve for perfect complements
+          drawLShape: (ctx, cornerX, cornerY, maxX, maxY, transform, style = {}) => {
+            const {
+              color = '#1d4ed8',
+              lineWidth = 2
+            } = style;
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.setLineDash([]);
+            
+            // Draw horizontal segment from corner to right edge
+            const corner = transform.toCanvas(cornerX, cornerY);
+            const rightEdge = transform.toCanvas(maxX, cornerY);
+            
+            ctx.beginPath();
+            ctx.moveTo(corner.x, corner.y);
+            ctx.lineTo(rightEdge.x, rightEdge.y);
+            ctx.stroke();
+            
+            // Draw vertical segment from corner to top edge
+            const topEdge = transform.toCanvas(cornerX, maxY);
+            
+            ctx.beginPath();
+            ctx.moveTo(corner.x, corner.y);
+            ctx.lineTo(topEdge.x, topEdge.y);
+            ctx.stroke();
+          },
+        
+          // Draw a straight line (e.g., budget/expenditure line)
+          drawLine: (ctx, x1, y1, x2, y2, transform, style = {}) => {
+            const {
+              color = '#dc2626',
+              lineWidth = 3,
+              dash = []
+            } = style;
+            
+            const pos1 = transform.toCanvas(x1, y1);
+            const pos2 = transform.toCanvas(x2, y2);
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.setLineDash(dash);
+            
+            ctx.beginPath();
+            ctx.moveTo(pos1.x, pos1.y);
+            ctx.lineTo(pos2.x, pos2.y);
+            ctx.stroke();
+            
+            ctx.setLineDash([]); // Reset dash
+          },
+        
+          // Highlight a point with a circle
+          highlightPoint: (ctx, x, y, transform, style = {}) => {
+            const {
+              outerColor = '#dc2626',
+              innerColor = '#ffffff',
+              outerRadius = 6,
+              innerRadius = 3
+            } = style;
+            
+            const pos = transform.toCanvas(x, y);
+            
+            // Outer circle
+            ctx.fillStyle = outerColor;
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, outerRadius, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Inner circle
+            ctx.fillStyle = innerColor;
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, innerRadius, 0, 2 * Math.PI);
+            ctx.fill();
+          },
+        
+          // Add text label at a point
+          addLabel: (ctx, text, x, y, transform, style = {}) => {
+            const {
+              color = '#374151',
+              fontSize = 12,
+              fontWeight = 'normal',
+              offsetX = 10,
+              offsetY = -10,
+              align = 'left',
+              backgroundColor = 'rgba(255, 255, 255, 0.6)',
+              backgroundPadding = 0,
+              borderRadius = 0
+            } = style;
+            
+            const pos = transform.toCanvas(x, y);
+            
+            // Set up font for text metrics
+            ctx.font = `${fontWeight} ${fontSize}px sans-serif`;
+            
+            // Draw background if specified
+            if (backgroundColor) {
+              const metrics = ctx.measureText(text);
+              const textWidth = metrics.width;
+              const textHeight = fontSize;
+              
+              // Calculate background rectangle position and size
+              let bgX, bgY, bgWidth, bgHeight;
+              
+              if (align === 'left') {
+                bgX = pos.x + offsetX - backgroundPadding;
+                bgY = pos.y + offsetY - textHeight - backgroundPadding;
+                bgWidth = textWidth + 2 * backgroundPadding;
+                bgHeight = textHeight + 2 * backgroundPadding;
+              } else if (align === 'center') {
+                bgX = pos.x + offsetX - textWidth/2 - backgroundPadding;
+                bgY = pos.y + offsetY - textHeight - backgroundPadding;
+                bgWidth = textWidth + 2 * backgroundPadding;
+                bgHeight = textHeight + 2 * backgroundPadding;
+              } else { // 'right'
+                bgX = pos.x + offsetX - textWidth - backgroundPadding;
+                bgY = pos.y + offsetY - textHeight - backgroundPadding;
+                bgWidth = textWidth + 2 * backgroundPadding;
+                bgHeight = textHeight + 2 * backgroundPadding;
+              }
+              
+              // Draw rounded rectangle background
+              ctx.fillStyle = backgroundColor;
+              if (borderRadius > 0) {
+                ctx.beginPath();
+                ctx.roundRect(bgX, bgY, bgWidth, bgHeight, borderRadius);
+                ctx.fill();
+              } else {
+                ctx.fillRect(bgX, bgY, bgWidth, bgHeight);
+              }
+            }
+            
+            // Draw text - ensure font is set right before drawing
+            ctx.fillStyle = color;
+            ctx.textAlign = align;
+            ctx.font = `${fontWeight} ${fontSize}px sans-serif`;
+            ctx.fillText(text, pos.x + offsetX, pos.y + offsetY);
+          },
+        
+          // Set up clipping region
+          setupClipping: (ctx, margins, width, height) => {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(margins.left, margins.top, 
+                     width - margins.left - margins.right, 
+                     height - margins.top - margins.bottom);
+            ctx.clip();
+          },
+        
+          // Restore clipping
+          restoreClipping: (ctx) => {
+            ctx.restore();
+          },
+        
+          // Create numeric range array
+          createRange: (min = 0.5, max = 5.0, step = 0.1) => {
+            const range = [];
+            for (let p = min; p <= max; p += step) {
+              range.push(Number(p.toFixed(2)));
+            }
+            return range;
+          },
+        
+          // Generic color interpolation between two hex colors
+          // Returns interpolated color as hex string
+          interpolateColor: (value, minValue, maxValue, colorStart, colorEnd) => {
+            // Clamp value to range
+            const t = Math.max(0, Math.min(1, (value - minValue) / (maxValue - minValue)));
+        
+            // Parse hex colors to RGB
+            const parseHex = (hex) => {
+              const r = parseInt(hex.slice(1, 3), 16);
+              const g = parseInt(hex.slice(3, 5), 16);
+              const b = parseInt(hex.slice(5, 7), 16);
+              return { r, g, b };
+            };
+        
+            const start = parseHex(colorStart);
+            const end = parseHex(colorEnd);
+        
+            // Linear interpolation
+            const r = Math.round(start.r + t * (end.r - start.r));
+            const g = Math.round(start.g + t * (end.g - start.g));
+            const b = Math.round(start.b + t * (end.b - start.b));
+        
+            // Convert back to hex
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+          }
+        };
+        
+        // Make available globally
+        window.CanvasUtils = CanvasUtils;
+    </script>
+
+    <!-- Original Inline Scripts -->
+
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          displayMath: [['$$', '$$'], ['\\[', '\\]']]
+        },
+        startup: {
+          ready: () => {
+            MathJax.startup.defaultReady();
+          }
+        }
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f1f5f9;
+        }
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+        }
+        .slider::-moz-range-thumb {
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            border: none;
+        }
+        canvas {
+            display: block;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Load configuration and math modules -->
+    <script type="text/javascript">
+        const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+        // Main Cost Minimization Problem Component
+        const CostVisualization = () => {
+            // State for selected production function
+            const [selectedProductionFunction, setSelectedProductionFunction] = useState('cobb-douglas');
+
+            // State for conditional demand type (labor or capital)
+            const [demandType, setDemandType] = useState('labor');
+
+            // State for all parameters - initialized with defaults
+            const [params, setParams] = useState(() => {
+                const costDefaults = {};
+                const costParams = CostConfig.costParams;
+                Object.keys(costParams).forEach(key => {
+                    costDefaults[key] = costParams[key].default;
+                });
+
+                const prodFunction = CostConfig.productionFunctions['cobb-douglas'];
+                const prodParams = prodFunction.config.productionParams;
+                Object.keys(prodParams).forEach(key => {
+                    costDefaults[key] = prodParams[key].default;
+                });
+
+                return costDefaults;
+            });
+
+            // Canvas refs
+            const mainCanvasRef = useRef();
+            const demandCanvasRef = useRef();
+            const costExpansionCanvasRef = useRef();
+
+            // Helper functions for parameter management
+            const updateParam = useCallback((key, value) => {
+                setParams(prev => ({ ...prev, [key]: value }));
+            }, []);
+
+            const resetCostParams = useCallback(() => {
+                const costDefaults = {};
+                const costParams = CostConfig.costParams;
+                Object.keys(costParams).forEach(key => {
+                    costDefaults[key] = costParams[key].default;
+                });
+                setParams(prev => ({ ...prev, ...costDefaults }));
+            }, []);
+
+            const resetProductionParams = useCallback(() => {
+                const prodDefaults = {};
+                const prodFunction = CostConfig.productionFunctions[selectedProductionFunction];
+                const prodParams = prodFunction.config.productionParams;
+                Object.keys(prodParams).forEach(key => {
+                    prodDefaults[key] = prodParams[key].default;
+                });
+                setParams(prev => ({ ...prev, ...prodDefaults }));
+            }, [selectedProductionFunction]);
+
+            // Calculate cost minimization optimization
+            const optimizationAnalysis = useMemo(() => {
+                const targetOutput = params.targetOutput;
+                const wageRate = params.wageRate;
+                const rentalRate = params.rentalRate;
+
+                // Get production function configuration
+                const prodFunction = CostConfig.productionFunctions[selectedProductionFunction];
+                const prodConfig = {};
+
+                // Extract production function parameters from params
+                Object.keys(prodFunction.config.productionParams).forEach(key => {
+                    prodConfig[key] = params[key];
+                });
+
+                // Solve CMP using CostMath
+                const solution = CostMath.solveCMP(
+                    targetOutput,
+                    wageRate,
+                    rentalRate,
+                    selectedProductionFunction,
+                    prodConfig
+                );
+
+                return {
+                    optimalBundle: { L: solution.L, K: solution.K },
+                    totalCost: solution.totalCost,
+                    mrts: solution.mrts,
+                    isCornerSolution: solution.isCornerSolution
+                };
+            }, [params, selectedProductionFunction]);
+
+            // Draw main visualization (production space with isoquants and isocost lines)
+            useEffect(() => {
+                if (!mainCanvasRef.current || !optimizationAnalysis) return;
+
+                const canvas = mainCanvasRef.current;
+                const { ctx, width, height } = CanvasUtils.initCanvas(canvas, 400, 320);
+                const margins = CanvasUtils.calculateMargins(width, height);
+
+                // Get visualization config
+                const prodFunction = CostConfig.productionFunctions[selectedProductionFunction];
+                const visualConfig = prodFunction.config.mainVisualization;
+                const transform = CanvasUtils.createTransform(margins, width, height, visualConfig.maxL, visualConfig.maxK);
+
+                // Draw coordinate system
+                const gridConfig = {
+                    xPoints: visualConfig.gridPoints.x,
+                    yPoints: visualConfig.gridPoints.y
+                };
+
+                CanvasUtils.drawGrid(ctx, margins, width, height, transform, gridConfig);
+                CanvasUtils.drawAxes(ctx, margins, width, height, 'Labor (L)', 'Capital (K)');
+                CanvasUtils.drawTicks(ctx, margins, width, height, transform, gridConfig);
+
+                CanvasUtils.setupClipping(ctx, margins, width, height);
+
+                // Helper function to draw isoquant curves
+                const drawIsoquant = (ctx, isoquantData, transform, style) => {
+                    // Handle L-shaped curves first (for fixed-proportions production)
+                    if (isoquantData.curveType === 'L-shaped') {
+                        const { cornerL, cornerK, maxL, maxK } = isoquantData.metadata;
+                        CanvasUtils.drawLShape(ctx, cornerL, cornerK, maxL, maxK, transform, style);
+                        return;
+                    }
+
+                    if (!isoquantData || isoquantData.length <= 1) return;
+
+                    // Check if this is a linear curve
+                    if (selectedProductionFunction === 'linear' && isoquantData.length === 2) {
+                        // Use efficient line drawing for linear curves
+                        CanvasUtils.drawLine(ctx,
+                            isoquantData[0].L, isoquantData[0].K,
+                            isoquantData[1].L, isoquantData[1].K,
+                            transform, style);
+                    } else {
+                        // Standard smooth curve drawing
+                        CanvasUtils.drawCurve(ctx, isoquantData.map(p => ({ x: p.L, y: p.K })), transform, style);
+                    }
+                };
+
+                // Extract production function parameters
+                const prodConfig = {};
+                Object.keys(prodFunction.config.productionParams).forEach(key => {
+                    prodConfig[key] = params[key];
+                });
+
+                // Draw background isoquants using equally-spaced output levels
+                const dynamicOutputLevels = CostMath.calculateDynamicOutputLevels(
+                    selectedProductionFunction, prodConfig, visualConfig.maxL, visualConfig.maxK,
+                    visualConfig.backgroundCurvePoints
+                );
+
+                // Calculate quantity range for color mapping
+                const paramRanges = prodFunction.config.productionParams;
+                const quantityRange = CostMath.productionFunctions[selectedProductionFunction].getQuantityRange(
+                    paramRanges, visualConfig.maxL, visualConfig.maxK
+                );
+
+                // Define color gradient: light blue to 80% of target blue
+                const lightBlue = '#bfdbfe';
+                const targetBlue = '#1e40af';
+                // Calculate 80% darkness: interpolate 80% from light to target
+                const darkBlue = CanvasUtils.interpolateColor(0.99, 0, 1, lightBlue, targetBlue);
+
+                dynamicOutputLevels.forEach(outputLevel => {
+                    const isoquantData = CostMath.productionFunctions[selectedProductionFunction].generateIsoquant(
+                        outputLevel, prodConfig, visualConfig.maxL, visualConfig.maxK
+                    );
+
+                    // Calculate color based on quantity level
+                    const color = CanvasUtils.interpolateColor(
+                        outputLevel, quantityRange.minQ, quantityRange.maxQ,
+                        lightBlue, darkBlue
+                    );
+
+                    drawIsoquant(ctx, isoquantData, transform, {
+                        color: color,
+                        lineWidth: 1
+                    });
+                });
+
+                // Get cost and price parameters for isocost line
+                const optimalCost = optimizationAnalysis.totalCost;
+                const wageRate = params.wageRate;
+                const rentalRate = params.rentalRate;
+
+                // Draw target isoquant (bold dark blue)
+                const targetIsoquant = CostMath.productionFunctions[selectedProductionFunction].generateIsoquant(
+                    params.targetOutput, prodConfig, visualConfig.maxL, visualConfig.maxK
+                );
+
+                drawIsoquant(ctx, targetIsoquant, transform, {
+                    color: '#1e40af',
+                    lineWidth: 3
+                });
+
+                // Draw optimal isocost line (red, tangent to target isoquant)
+                const optimalEndpoints = CostMath.getIsocostLineEndpoints(
+                    optimalCost, wageRate, rentalRate, visualConfig.maxL, visualConfig.maxK
+                );
+
+                CanvasUtils.drawLine(ctx,
+                    0, optimalEndpoints.capitalIntercept,
+                    optimalEndpoints.laborIntercept, 0,
+                    transform, {
+                        color: '#059669',
+                        lineWidth: 3
+                    });
+
+                CanvasUtils.restoreClipping(ctx);
+
+                // Highlight optimal bundle
+                const optimalL = optimizationAnalysis.optimalBundle.L;
+                const optimalK = optimizationAnalysis.optimalBundle.K;
+
+                CanvasUtils.highlightPoint(ctx, optimalL, optimalK, transform, {
+                    outerColor: '#dc2626',
+                    innerColor: '#ffffff'
+                });
+
+                // Add optimal bundle label with coordinates
+                const bundleLabel = `L*=${optimalL.toFixed(1)}, K*=${optimalK.toFixed(1)}`;
+                CanvasUtils.addLabel(ctx, bundleLabel, optimalL, optimalK, transform, {
+                    color: '#dc2626',
+                    fontWeight: 'bold',
+                    offsetX: 10,
+                    offsetY: -10,
+                    fontSize: 14
+                });
+
+            }, [params, selectedProductionFunction, optimizationAnalysis]);
+
+            // Draw conditional demand curve (labor or capital)
+            useEffect(() => {
+                if (!demandCanvasRef.current) return;
+
+                const canvas = demandCanvasRef.current;
+                const { ctx, width, height } = CanvasUtils.initCanvas(canvas, 400, 280);
+                const margins = CanvasUtils.calculateMargins(width, height);
+
+                // Get visualization config
+                const prodFunction = CostConfig.productionFunctions[selectedProductionFunction];
+                const visualConfig = prodFunction.config.conditionalDemandVisualization[demandType];
+
+                // Extract production function parameters
+                const prodConfig = {};
+                Object.keys(prodFunction.config.productionParams).forEach(key => {
+                    prodConfig[key] = params[key];
+                });
+
+                let demandCurve, transform, axisLabels, curveData, currentX, currentY, pointLabel;
+
+                if (demandType === 'labor') {
+                    // Generate conditional labor demand curve: L*(w|r,q)
+                    const wageRange = { min: 0.05, max: visualConfig.maxW };
+                    demandCurve = CostMath.generateConditionalLaborDemand(
+                        wageRange,
+                        params.rentalRate,
+                        params.targetOutput,
+                        selectedProductionFunction,
+                        prodConfig,
+                        50
+                    );
+
+                    // Create transform: X-axis = Labor (L), Y-axis = Wage rate (w)
+                    transform = CanvasUtils.createTransform(
+                        margins, width, height,
+                        visualConfig.maxL,
+                        visualConfig.maxW
+                    );
+
+                    axisLabels = { x: 'Labor (L)', y: 'Wage (w)' };
+
+                    // Convert from {wageRate, laborDemand} to {x, y} format
+                    curveData = demandCurve.map(point => ({
+                        x: point.laborDemand,
+                        y: point.wageRate
+                    }));
+
+                    // Current equilibrium point
+                    currentX = optimizationAnalysis.optimalBundle.L;
+                    currentY = params.wageRate;
+                    pointLabel = `w=${currentY.toFixed(1)}, L*=${currentX.toFixed(1)}`;
+
+                } else {
+                    // Generate conditional capital demand curve: K*(r|w,q)
+                    const rentalRateRange = { min: 0.05, max: visualConfig.maxR };
+                    demandCurve = CostMath.generateConditionalCapitalDemand(
+                        rentalRateRange,
+                        params.wageRate,
+                        params.targetOutput,
+                        selectedProductionFunction,
+                        prodConfig,
+                        50
+                    );
+
+                    // Create transform: X-axis = Capital (K), Y-axis = Rental rate (r)
+                    transform = CanvasUtils.createTransform(
+                        margins, width, height,
+                        visualConfig.maxK,
+                        visualConfig.maxR
+                    );
+
+                    axisLabels = { x: 'Capital (K)', y: 'Rental Rate (r)' };
+
+                    // Convert from {rentalRate, capitalDemand} to {x, y} format
+                    curveData = demandCurve.map(point => ({
+                        x: point.capitalDemand,
+                        y: point.rentalRate
+                    }));
+
+                    // Current equilibrium point
+                    currentX = optimizationAnalysis.optimalBundle.K;
+                    currentY = params.rentalRate;
+                    pointLabel = `r=${currentY.toFixed(1)}, K*=${currentX.toFixed(1)}`;
+                }
+
+                // Draw coordinate system
+                const gridConfig = {
+                    xPoints: visualConfig.gridPoints.x,
+                    yPoints: visualConfig.gridPoints.y
+                };
+
+                CanvasUtils.drawGrid(ctx, margins, width, height, transform, gridConfig);
+                CanvasUtils.drawAxes(ctx, margins, width, height, axisLabels.x, axisLabels.y);
+                CanvasUtils.drawTicks(ctx, margins, width, height, transform, gridConfig);
+
+                CanvasUtils.setupClipping(ctx, margins, width, height);
+
+                // Draw the conditional demand curve
+                CanvasUtils.drawCurve(ctx, curveData, transform, {
+                    color: '#d97706',
+                    lineWidth: 3
+                });
+
+                CanvasUtils.restoreClipping(ctx);
+
+                // Highlight current equilibrium point
+                CanvasUtils.highlightPoint(ctx, currentX, currentY, transform, {
+                    outerColor: '#dc2626',
+                    innerColor: '#ffffff'
+                });
+
+                // Add label for current point
+                CanvasUtils.addLabel(ctx, pointLabel, currentX, currentY, transform, {
+                    color: '#dc2626',
+                    fontWeight: 'bold',
+                    offsetX: 10,
+                    offsetY: -10,
+                    fontSize: 14
+                });
+
+            }, [params, selectedProductionFunction, optimizationAnalysis, demandType]);
+
+            // Draw cost expansion path
+            useEffect(() => {
+                if (!costExpansionCanvasRef.current) return;
+
+                const canvas = costExpansionCanvasRef.current;
+                const { ctx, width, height } = CanvasUtils.initCanvas(canvas, 400, 280);
+                const margins = CanvasUtils.calculateMargins(width, height);
+
+                // Get visualization config
+                const prodFunction = CostConfig.productionFunctions[selectedProductionFunction];
+                const visualConfig = prodFunction.config.costExpansionVisualization;
+
+                // Extract production function parameters
+                const prodConfig = {};
+                Object.keys(prodFunction.config.productionParams).forEach(key => {
+                    prodConfig[key] = params[key];
+                });
+
+                // Generate cost expansion path: C(w,r,q)
+                // Output range from config
+                const outputRange = { min: 0.05, max: visualConfig.maxQ };
+                const costCurve = CostMath.generateCostExpansionPath(
+                    outputRange,
+                    params.wageRate,
+                    params.rentalRate,
+                    selectedProductionFunction,
+                    prodConfig,
+                    50
+                );
+
+                // Create transform: X-axis = Output (q), Y-axis = Total Cost (C)
+                const transform = CanvasUtils.createTransform(
+                    margins, width, height,
+                    visualConfig.maxQ,
+                    visualConfig.maxC
+                );
+
+                // Draw coordinate system
+                const gridConfig = {
+                    xPoints: visualConfig.gridPoints.x,
+                    yPoints: visualConfig.gridPoints.y
+                };
+
+                CanvasUtils.drawGrid(ctx, margins, width, height, transform, gridConfig);
+                CanvasUtils.drawAxes(ctx, margins, width, height, 'Output (q)', 'Total Cost (TC)');
+                CanvasUtils.drawTicks(ctx, margins, width, height, transform, gridConfig);
+
+                CanvasUtils.setupClipping(ctx, margins, width, height);
+
+                // Draw the cost expansion path curve
+                // Convert from {output, totalCost} to {x, y} format
+                const curveData = costCurve.map(point => ({
+                    x: point.output,
+                    y: point.totalCost
+                }));
+
+                CanvasUtils.drawCurve(ctx, curveData, transform, {
+                    color: '#7c3aed',
+                    lineWidth: 3
+                });
+
+                CanvasUtils.restoreClipping(ctx);
+
+                // Highlight current equilibrium point (current output, total cost)
+                const currentOutput = params.targetOutput;
+                const currentCost = optimizationAnalysis.totalCost;
+
+                CanvasUtils.highlightPoint(ctx, currentOutput, currentCost, transform, {
+                    outerColor: '#dc2626',
+                    innerColor: '#ffffff'
+                });
+
+                // Add label for current point
+                const pointLabel = `q=${currentOutput.toFixed(1)}, C*=${currentCost.toFixed(1)}`;
+                CanvasUtils.addLabel(ctx, pointLabel, currentOutput, currentCost, transform, {
+                    color: '#dc2626',
+                    fontWeight: 'bold',
+                    offsetX: 10,
+                    offsetY: 10,
+                    fontSize: 14
+                });
+
+            }, [params, selectedProductionFunction, optimizationAnalysis]);
+
+            // Render parameter controls
+            const renderSlider = (key, paramConfig) => {
+                return React.createElement('div', { key: key, className: 'space-y-1' },
+                    React.createElement('label', { className: 'block text-sm font-medium text-gray-600 mb-1' },
+                        paramConfig.label
+                    ),
+                    React.createElement('div', { className: 'flex items-center space-x-3' },
+                        React.createElement('input', {
+                            type: 'range',
+                            min: paramConfig.min,
+                            max: paramConfig.max,
+                            step: paramConfig.step,
+                            value: params[key] || paramConfig.default,
+                            onChange: (e) => updateParam(key, parseFloat(e.target.value)),
+                            className: 'slider flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer'
+                        }),
+                        React.createElement('span', { className: 'text-sm font-mono text-gray-600 w-12 text-right' },
+                            (params[key] || paramConfig.default).toFixed(paramConfig.precision)
+                        )
+                    )
+                );
+            };
+
+            // MathJax rendering effect
+            useEffect(() => {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise().catch((err) => console.log('MathJax typeset failed:', err));
+                }
+            }, [selectedProductionFunction]);
+
+            // Helper function to render cost equation display
+            const renderCostDisplay = () => {
+                const w = (params.wageRate ?? 2.0).toFixed(1);
+                const r = (params.rentalRate ?? 3.0).toFixed(1);
+
+                const generalFormLatex = `$TC=wL + rK$`;
+                const specificFormLatex = `Isocost line: ${w}L + ${r}K = C`;
+
+                return React.createElement('div', {
+                    key: 'cost-equation',
+                    className: "text-center"
+                }, [
+                    React.createElement('div', {
+                        key: 'general-form',
+                        className: "mb-1"
+                    }, generalFormLatex),
+                    React.createElement('div', {
+                        key: 'specific-form',
+                        className: "text-sm text-red-600"
+                    }, specificFormLatex)
+                ]);
+            };
+
+            // Helper function to render production function equation display
+            const renderEquationDisplay = () => {
+                const funcConfig = CostConfig.productionFunctions[selectedProductionFunction];
+                if (!funcConfig) return '';
+
+                let generalFormLatex = funcConfig.mathForm;
+                let currentValuesLatex = '';
+
+                const targetOutput = (params.targetOutput ?? 10).toFixed(0);
+
+                // Add specific form with actual parameter values (as isoquant equation)
+                switch(selectedProductionFunction) {
+                    case 'cobb-douglas':
+                        const A = (params.cd_A ?? 1).toFixed(2);
+                        const alpha = (params.cd_alpha ?? 0.6).toFixed(2);
+                        const beta = (params.cd_beta ?? 0.4).toFixed(2);
+                        currentValuesLatex = `Target isoquant: ${A}L<sup>${alpha}</sup>K<sup>${beta}</sup> = ${targetOutput}`;
+                        break;
+                    case 'ces':
+                        const a = (params.ces_a ?? 0.5).toFixed(2);
+                        const sigma = (params.ces_sigma ?? 1.5).toFixed(2);
+                        const nu = (params.ces_nu ?? 1.0).toFixed(2);
+                        const b = (1 - (params.ces_a ?? 0.5)).toFixed(2);
+                        const rho = ((sigma-1)/sigma).toFixed(2);
+                        const outerExp = (nu / ((sigma-1)/sigma)).toFixed(2);
+                        currentValuesLatex = `Target isoquant: (${a}L<sup>${rho}</sup> + ${b}K<sup>${rho}</sup>)<sup>${outerExp}</sup> = ${targetOutput}`;
+                        break;
+                    case 'linear':
+                        const lin_a = (params.lin_a ?? 1).toFixed(2);
+                        const lin_b = (params.lin_b ?? 1.2).toFixed(2);
+                        currentValuesLatex = `Target isoquant: ${lin_a}L + ${lin_b}K = ${targetOutput}`;
+                        break;
+                    case 'fixed-proportions':
+                        const fp_A = (params.fp_A ?? 1).toFixed(2);
+                        const fp_a = (params.fp_a ?? 0.5).toFixed(2);
+                        const fp_b = (params.fp_b ?? 0.8).toFixed(2);
+                        currentValuesLatex = `Target isoquant: ${fp_A} min(${fp_a}L, ${fp_b}K) = ${targetOutput}`;
+                        break;
+                }
+
+                const generalLatex = `$f(K,L)=${generalFormLatex}$`;
+                const specificLatex = currentValuesLatex;
+
+                return React.createElement('div', {
+                    key: 'math-equation',
+                    className: "text-center"
+                }, [
+                    React.createElement('div', {
+                        key: 'general-form',
+                        className: "mb-1"
+                    }, generalLatex),
+                    React.createElement('div', {
+                        key: 'specific-form',
+                        className: "text-sm text-blue-600",
+                        dangerouslySetInnerHTML: { __html: specificLatex }
+                    })
+                ]);
+            };
+
+            // Main render
+            return React.createElement('div', { className: 'min-h-screen p-6' },
+                // Header
+                React.createElement('div', { className: 'text-center mb-4' },
+                    React.createElement('h1', { className: 'text-3xl font-bold text-gray-800 mb-2' },
+                        'Cost Minimization Problem'
+                    )
+                ),
+
+                // Main content - three column layout
+                React.createElement('div', { className: 'grid grid-cols-1 lg:grid-cols-3 gap-3 max-w-7xl mx-auto' },
+
+                    // Left column: Controls
+                    React.createElement('div', { className: 'space-y-3' },
+
+                        // Production function selector
+                        React.createElement('div', { className: 'bg-white rounded-lg shadow-sm border p-4' },
+                            React.createElement('h2', { className: 'text-lg font-semibold text-gray-800 mb-4' },
+                                'Production Function'
+                            ),
+                            React.createElement('select', {
+                                value: selectedProductionFunction,
+                                onChange: (e) => {
+                                    setSelectedProductionFunction(e.target.value);
+                                    // Reset production params when changing function
+                                    const prodDefaults = {};
+                                    const prodFunction = CostConfig.productionFunctions[e.target.value];
+                                    const prodParams = prodFunction.config.productionParams;
+                                    Object.keys(prodParams).forEach(key => {
+                                        prodDefaults[key] = prodParams[key].default;
+                                    });
+                                    setParams(prev => ({ ...prev, ...prodDefaults }));
+                                },
+                                className: 'w-full p-2 border border-gray-300 rounded-md'
+                            },
+                                Object.entries(CostConfig.productionFunctions).map(([key, config]) =>
+                                    React.createElement('option', { key: key, value: key }, config.name)
+                                )
+                            )
+                        ),
+
+                        // Cost parameters
+                        React.createElement('div', { className: 'bg-white rounded-lg shadow-sm border p-4' },
+                            React.createElement('div', { className: 'flex justify-between items-center mb-2' },
+                                React.createElement('h2', { className: 'text-lg font-semibold text-gray-800' },
+                                    'Cost Parameters'
+                                ),
+                                React.createElement('button', {
+                                    onClick: resetCostParams,
+                                    className: 'text-sm px-2 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors'
+                                }, 'Reset')
+                            ),
+                            React.createElement('div', {
+                                key: 'cost-display',
+                                className: 'text-center mb-2 p-2 bg-gray-50 rounded'
+                            }, renderCostDisplay()),
+                            React.createElement('div', { className: 'space-y-3' },
+                                Object.entries(CostConfig.costParams).map(([key, config]) =>
+                                    renderSlider(key, config)
+                                )
+                            )
+                        ),
+
+                        // Production function parameters
+                        React.createElement('div', { className: 'bg-white rounded-lg shadow-sm border p-4' },
+                            React.createElement('div', { className: 'flex justify-between items-center mb-2' },
+                                React.createElement('h2', { className: 'text-lg font-semibold text-gray-800' },
+                                    'Production Parameters'
+                                ),
+                                React.createElement('button', {
+                                    onClick: resetProductionParams,
+                                    className: 'text-sm px-2 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors'
+                                }, 'Reset')
+                            ),
+                            React.createElement('div', {
+                                key: 'equation-display',
+                                className: 'text-center mb-2 p-2 bg-gray-50 rounded'
+                            }, renderEquationDisplay()),
+                            React.createElement('div', { className: 'space-y-3' },
+                                Object.entries(
+                                    CostConfig.productionFunctions[selectedProductionFunction].config.productionParams
+                                ).map(([key, config]) =>
+                                    renderSlider(key, config)
+                                )
+                            )
+                        )
+                    ),
+
+                    // Center column: Main visualization and results
+                    React.createElement('div', { className: 'space-y-3' },
+                        // Main visualization
+                        React.createElement('div', { className: 'bg-white rounded-lg shadow-sm border p-4' },
+                            React.createElement('h2', { className: 'text-lg font-semibold text-gray-800 mb-4' },
+                                'Cost-Minimizing Input Mix'
+                            ),
+                            React.createElement('canvas', {
+                                ref: mainCanvasRef,
+                                className: 'w-full'
+                            }),
+                            // Legend below canvas
+                            React.createElement('div', {
+                                className: 'grid grid-cols-2 gap-x-4 gap-y-1.5 mt-3 text-xs text-gray-600'
+                            }, [
+                                React.createElement('div', {
+                                    key: 'background-isoquants-legend',
+                                    className: 'flex items-center gap-2'
+                                }, [
+                                    React.createElement('div', {
+                                        key: 'bg-isoquants-color',
+                                        className: 'w-4 h-0.5 bg-blue-300'
+                                    }),
+                                    React.createElement('span', {
+                                        key: 'bg-isoquants-label'
+                                    }, 'Background Isoquants')
+                                ]),
+                                React.createElement('div', {
+                                    key: 'target-isoquant-legend',
+                                    className: 'flex items-center gap-2'
+                                }, [
+                                    React.createElement('div', {
+                                        key: 'target-isoquant-color',
+                                        className: 'w-4 h-0.5 bg-blue-800'
+                                    }),
+                                    React.createElement('span', {
+                                        key: 'target-isoquant-label'
+                                    }, `Target Isoquant (q=${params.targetOutput})`)
+                                ]),
+                                React.createElement('div', {
+                                    key: 'optimal-isocost-legend',
+                                    className: 'flex items-center gap-2'
+                                }, [
+                                    React.createElement('div', {
+                                        key: 'optimal-isocost-color',
+                                        className: 'w-4 h-0.5 bg-emerald-600'
+                                    }),
+                                    React.createElement('span', {
+                                        key: 'optimal-isocost-label'
+                                    }, `Optimal Isocost (C*=${optimizationAnalysis.totalCost.toFixed(1)})`)
+                                ]),
+                                React.createElement('div', {
+                                    key: 'optimal-bundle-legend',
+                                    className: 'flex items-center gap-2'
+                                }, [
+                                    React.createElement('div', {
+                                        key: 'optimal-bundle-color',
+                                        className: 'w-2 h-2 bg-red-600 rounded-full'
+                                    }),
+                                    React.createElement('span', {
+                                        key: 'optimal-bundle-label'
+                                    }, 'Optimal Input Mix')
+                                ])
+                            ])
+                        ),
+
+                        // Optimization Results
+                        React.createElement('div', {
+                            key: 'results-summary',
+                            className: 'bg-white p-4 rounded-lg shadow-sm border'
+                        }, [
+                            React.createElement('h3', {
+                                key: 'results-title',
+                                className: 'text-lg font-semibold text-gray-700 mb-4'
+                            }, 'Optimization Results'),
+
+                            // Cost Minimization Problem Statement
+                            React.createElement('div', {
+                                key: 'cmp-problem-statement',
+                                className: 'bg-gray-50 p-3 rounded-lg border mb-3'
+                            }, [
+                                React.createElement('div', {
+                                    key: 'cmp-content',
+                                    className: 'text-sm text-gray-700'
+                                }, [
+                                    React.createElement('div', { key: 'cmp-explanation' }, [
+                                        React.createElement('strong', { key: 'cmp-title' }, 'Cost Minimization Problem:'),
+                                        React.createElement('div', {
+                                            key: 'cmp-math',
+                                            className: 'my-2'
+                                        }, `Minimize total cost $TC=wL + rK$ of producing target output $q$ by choosing an optimal mix of inputs $K$ and $L$, subject to technology constraint $f(L,K) \\geq q$`)
+                                    ])
+                                ])
+                            ]),
+
+                            optimizationAnalysis ? React.createElement('div', {
+                                key: 'results-content',
+                                className: 'grid grid-cols-2 gap-4 text-sm'
+                            }, [
+                                React.createElement('div', {
+                                    key: 'optimal-inputs',
+                                    className: 'space-y-2'
+                                }, [
+                                    React.createElement('h4', {
+                                        key: 'inputs-title',
+                                        className: 'font-bold text-gray-600'
+                                    }, 'Optimal Input Mix'),
+                                    React.createElement('div', { key: 'LK-values' }, `L* = ${optimizationAnalysis.optimalBundle.L.toFixed(2)}, K* = ${optimizationAnalysis.optimalBundle.K.toFixed(2)}`)
+                                ]),
+
+                                React.createElement('div', {
+                                    key: 'minimum-cost',
+                                    className: 'space-y-2'
+                                }, [
+                                    React.createElement('h4', {
+                                        key: 'cost-title',
+                                        className: 'font-bold text-gray-600'
+                                    }, 'Minimum Cost'),
+                                    React.createElement('div', { key: 'cost-value' }, `C* = ${optimizationAnalysis.totalCost.toFixed(2)}`)
+                                ])
+                            ]) : React.createElement('div', {
+                                key: 'loading',
+                                className: 'text-gray-500'
+                            }, 'Loading optimization results...')
+                        ])
+                    ),
+
+                    // Right column: Supporting visualizations
+                    React.createElement('div', { className: 'space-y-3' },
+
+                        // Conditional demand (labor or capital)
+                        React.createElement('div', { className: 'bg-white rounded-lg shadow-sm border p-4' },
+                            React.createElement('div', { className: 'flex justify-between items-center mb-4' },
+                                React.createElement('h2', { className: 'text-lg font-semibold text-gray-800' },
+                                    'Conditional Demand'
+                                ),
+                                React.createElement('div', { className: 'flex gap-2' },
+                                    React.createElement('button', {
+                                        onClick: () => setDemandType('labor'),
+                                        className: `px-3 py-1 text-sm rounded transition-colors ${
+                                            demandType === 'labor'
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        }`
+                                    }, 'Labor'),
+                                    React.createElement('button', {
+                                        onClick: () => setDemandType('capital'),
+                                        className: `px-3 py-1 text-sm rounded transition-colors ${
+                                            demandType === 'capital'
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        }`
+                                    }, 'Capital')
+                                )
+                            ),
+                            React.createElement('canvas', {
+                                ref: demandCanvasRef,
+                                className: 'w-full'
+                            })
+                        ),
+
+                        // Cost expansion path
+                        React.createElement('div', { className: 'bg-white rounded-lg shadow-sm border p-4' },
+                            React.createElement('h2', { className: 'text-lg font-semibold text-gray-800 mb-4' },
+                                'Total Cost Curve'
+                            ),
+                            React.createElement('canvas', {
+                                ref: costExpansionCanvasRef,
+                                className: 'w-full'
+                            })
+                        )
+                    )
+                ),
+
+                // Educational Content Section - Understanding Cost Minimization
+                React.createElement('div', {
+                    key: 'educational-notes',
+                    className: 'bg-white p-6 rounded-lg shadow-sm border max-w-7xl mx-auto mt-6'
+                }, [
+                    React.createElement('h3', {
+                        key: 'education-title',
+                        className: 'text-xl font-semibold text-gray-800 mb-4'
+                    }, 'Understanding the Visualizations'),
+
+                    React.createElement('div', {
+                        key: 'education-grid',
+                        className: 'grid grid-cols-1 md:grid-cols-3 gap-6 text-sm'
+                    }, [
+                        React.createElement('div', { key: 'main-viz-explanation' }, [
+                            React.createElement('h4', {
+                                key: 'main-viz-title',
+                                className: 'font-semibold text-gray-700 mb-3 text-base'
+                            }, 'Cost-Minimizing Input Mix'),
+                            React.createElement('ul', {
+                                key: 'main-viz-list',
+                                className: 'text-gray-600 space-y-1'
+                            }, [
+                                React.createElement('li', { key: 'main-1' }, '• Shows optimal combination of labor (L) and capital (K)'),
+                                React.createElement('li', { key: 'main-2' }, '• Target isoquant (dark blue) represents required output level q'),
+                                React.createElement('li', { key: 'main-3' }, '• Optimal isocost line (green) shows minimum cost to achieve q'),
+                                React.createElement('li', { key: 'main-4' }, '• Red point indicates the cost-minimizing input mix')
+                            ])
+                        ]),
+                        React.createElement('div', { key: 'conditional-demand-explanation' }, [
+                            React.createElement('h4', {
+                                key: 'cond-demand-title',
+                                className: 'font-semibold text-gray-700 mb-3 text-base'
+                            }, 'Conditional Demands'),
+                            React.createElement('ul', {
+                                key: 'cond-demand-list',
+                                className: 'text-gray-600 space-y-1'
+                            }, [
+                                React.createElement('li', { key: 'cond-1' }, '• Show how optimal input usage responds to factor price changes, conditional on target output q'),
+                                React.createElement('li', { key: 'cond-4' }, '• Illustrates pure substitution effects between inputs')
+                            ])
+                        ]),
+                        React.createElement('div', { key: 'total-cost-explanation' }, [
+                            React.createElement('h4', {
+                                key: 'total-cost-title',
+                                className: 'font-semibold text-gray-700 mb-3 text-base'
+                            }, 'Total Cost Curve'),
+                            React.createElement('ul', {
+                                key: 'total-cost-list',
+                                className: 'text-gray-600 space-y-1'
+                            }, [
+                                React.createElement('li', { key: 'cost-1' }, '• Shows minimum cost C*(q) for each output level'),
+                                React.createElement('li', { key: 'cost-2' }, '• Its shape is affected by returns to scale'),
+                                React.createElement('li', { key: 'cost-4' }, '• Basis for deriving marginal and average cost curves')
+                            ])
+                        ])
+                    ])
+                ])
+            );
+        };
+
+        // Mount the React component
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(CostVisualization));
+    </script>
+</body>
+</html>

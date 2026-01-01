@@ -1,0 +1,2406 @@
+<!DOCTYPE html>
+<!--
+UMP Interactive Visualization
+Copyright (c) 2025 Kirill Chernomaz (San Francisco State University) | MIT License
+Built with Claude Code
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consumer Optimization - Interactive Visualization</title>
+    <!-- Embedded JavaScript Modules -->
+    <script>
+        // Embedded Module: umpConfig.js
+        // Configuration for UMP Consumer Optimization App
+        // Contains parameter definitions, defaults, and visualization settings
+        
+        const UmpConfig = {
+          
+          // Budget constraint parameters (shared across all utility functions)
+          budgetParams: {
+            income: { min: 10, max: 160, step: 5, default: 90, precision: 0, label: 'Income (I)' },
+            priceX: { min: 0.5, max: 6.0, step: 0.1, default: 2.0, precision: 1, label: 'Price of X (Px)' },
+            priceY: { min: 0.5, max: 6.0, step: 0.1, default: 3.0, precision: 1, label: 'Price of Y (Py)' }
+          },
+          
+          // Utility function configurations (preference-specific)
+          utilityFunctions: {
+            'cobb-douglas': {
+              name: 'Cobb-Douglas',
+              mathForm: 'U(x,y) = Ax^{\\alpha} y^{\\beta}',
+              
+              config: {
+                // Preference parameters (utility function specific)
+                preferenceParams: {
+                  cd_A: { min: 0.1, max: 2.5, step: 0.1, default: 1.0, precision: 1, label: 'A (scale parameter)' },
+                  cd_alpha: { min: 0.1, max: 1.5, step: 0.05, default: 0.6, precision: 2, label: 'α (exponent on X)' },
+                  cd_beta: { min: 0.1, max: 1.5, step: 0.05, default: 0.4, precision: 2, label: 'β (exponent on Y)' }
+                },
+                
+                // Main visualization bounds (consumer choice space)
+                mainVisualization: {
+                  maxX: 60, maxY: 60,
+                  backgroundCurvePoints: 20,
+                  gridPoints: { x: [10, 20, 30, 40, 50, 60], y: [10, 20, 30, 40, 50, 60] }
+                },
+                
+                // Demand curve visualization (top right)
+                demandVisualization: {
+                  maxX: 60, maxY: 6,
+                  gridPoints: { x: [10, 20, 30, 40, 50, 60], y: [1, 2, 3, 4, 5, 6] }
+                },
+                
+                // Engel curve visualization (bottom right)  
+                engelVisualization: {
+                  maxX: 60, maxY: 200,
+                  gridPoints: { x: [15, 30, 45, 60], y: [50, 100, 150, 200] }
+                }
+              }
+            },
+            
+            'perfect-substitutes': {
+              name: 'Perfect Substitutes',
+              mathForm: 'U(x,y) = ax + by',
+              
+              config: {
+                // Preference parameters (utility function specific)
+                preferenceParams: {
+                  ps_a: { min: 0.1, max: 4.0, step: 0.1, default: 1.0, precision: 1, label: 'a (coefficient on X)' },
+                  ps_b: { min: 0.1, max: 4.0, step: 0.1, default: 1.0, precision: 1, label: 'b (coefficient on Y)' }
+                },
+                
+                // Main visualization bounds (consumer choice space)
+                mainVisualization: {
+                  maxX: 60, maxY: 60,
+                  backgroundCurvePoints: 20,
+                  gridPoints: { x: [10, 20, 30, 40, 50, 60], y: [10, 20, 30, 40, 50, 60] }
+                },
+                
+                // Demand curve visualization (top right)
+                demandVisualization: {
+                  maxX: 60, maxY: 6,
+                  gridPoints: { x: [10, 20, 30, 40, 50, 60], y: [1, 2, 3, 4, 5, 6] }
+                },
+                
+                // Engel curve visualization (bottom right)  
+                engelVisualization: {
+                  maxX: 60, maxY: 200,
+                  gridPoints: { x: [15, 30, 45, 60], y: [50, 100, 150, 200] }
+                }
+              }
+            },
+        
+            'perfect-complements': {
+              name: 'Perfect Complements',
+              mathForm: 'U(x,y) = A\\min(ax, by)',
+              
+              config: {
+                // Preference parameters (utility function specific)
+                preferenceParams: {
+                  pc_A: { min: 0.1, max: 2.0, step: 0.1, default: 1.0, precision: 1, label: 'A (scale parameter)' },
+                  pc_a: { min: 0.1, max: 4.0, step: 0.1, default: 1.0, precision: 1, label: 'a (coefficient on X)' },
+                  pc_b: { min: 0.1, max: 4.0, step: 0.1, default: 1.0, precision: 1, label: 'b (coefficient on Y)' }
+                },
+                
+                // Main visualization bounds (consumer choice space)
+                mainVisualization: {
+                  maxX: 60, maxY: 60,
+                  backgroundCurvePoints: 20,
+                  gridPoints: { x: [10, 20, 30, 40, 50, 60], y: [10, 20, 30, 40, 50, 60] }
+                },
+                
+                // Demand curve visualization (top right)
+                demandVisualization: {
+                  maxX: 60, maxY: 6,
+                  gridPoints: { x: [10, 20, 30, 40, 50, 60], y: [1, 2, 3, 4, 5, 6] }
+                },
+                
+                // Engel curve visualization (bottom right)  
+                engelVisualization: {
+                  maxX: 60, maxY: 200,
+                  gridPoints: { x: [15, 30, 45, 60], y: [50, 100, 150, 200] }
+                }
+              }
+            },
+        
+            'ces': {
+              name: 'CES (Constant Elasticity of Substitution)',
+              mathForm: 'U(x,y) = (ax^{\\rho} + (1-a)y^{\\rho})^{1/\\rho}',
+              
+              config: {
+                // Preference parameters (utility function specific)
+                preferenceParams: {
+                  ces_a: { min: 0.1, max: 0.9, step: 0.05, default: 0.5, precision: 2, label: 'a (weight on X, 1-a on Y)' },
+                  ces_rho: { min: -5, max: 1.0, step: 0.05, default: 0.5, precision: 2, label: 'ρ (substitution parameter)' }
+                },
+                
+                // Main visualization bounds (consumer choice space)
+                mainVisualization: {
+                  maxX: 60, maxY: 60,
+                  backgroundCurvePoints: 20,
+                  gridPoints: { x: [10, 20, 30, 40, 50, 60], y: [10, 20, 30, 40, 50, 60] }
+                },
+                
+                // Demand curve visualization (top right)
+                demandVisualization: {
+                  maxX: 60, maxY: 6,
+                  gridPoints: { x: [10, 20, 30, 40, 50, 60], y: [1, 2, 3, 4, 5, 6] }
+                },
+                
+                // Engel curve visualization (bottom right)  
+                engelVisualization: {
+                  maxX: 60, maxY: 200,
+                  gridPoints: { x: [15, 30, 45, 60], y: [50, 100, 150, 200] }
+                }
+              }
+            },
+        
+            'quasilinear': {
+              name: 'Quasilinear',
+              mathForm: 'U(x,y) = x^{\\alpha} + by',
+              
+              config: {
+                // Preference parameters (utility function specific)
+                preferenceParams: {
+                  ql_alpha: { min: 0.05, max: 1.5, step: 0.025, default: 0.5, precision: 3, label: 'α (exponent on X)' },
+                  ql_b: { min: 0.1, max: 4.0, step: 0.025, default: 0.15, precision: 3, label: 'b (coefficient on Y)' }
+                },
+                
+                // Main visualization bounds (consumer choice space)
+                mainVisualization: {
+                  maxX: 60, maxY: 60,
+                  backgroundCurvePoints: 20,
+                  gridPoints: { x: [10, 20, 30, 40, 50, 60], y: [10, 20, 30, 40, 50, 60] }
+                },
+                
+                // Demand curve visualization (top right)
+                demandVisualization: {
+                  maxX: 60, maxY: 6,
+                  gridPoints: { x: [10, 20, 30, 40, 50, 60], y: [1, 2, 3, 4, 5, 6] }
+                },
+                
+                // Engel curve visualization (bottom right)  
+                engelVisualization: {
+                  maxX: 60, maxY: 200,
+                  gridPoints: { x: [15, 30, 45, 60], y: [50, 100, 150, 200] }
+                }
+              }
+            }
+          },
+          
+          // Get merged defaults for all utility functions
+          getAllDefaults() {
+            const allDefaults = {};
+            
+            // Add budget parameters once
+            Object.assign(allDefaults, this.getBudgetDefaults());
+            
+            // Add preference parameters for each utility function
+            Object.keys(this.utilityFunctions).forEach(funcType => {
+              Object.assign(allDefaults, this.getPreferenceDefaults(funcType));
+            });
+            
+            return allDefaults;
+          },
+          
+          getBudgetDefaults() {
+            const defaults = {};
+            Object.keys(this.budgetParams).forEach(key => {
+              defaults[key] = this.budgetParams[key].default;
+            });
+            return defaults;
+          },
+          
+          // Get preference parameters for a specific utility function
+          getPreferenceDefaults(utilityType = 'cobb-douglas') {
+            const utilityConfig = this.utilityFunctions[utilityType];
+            if (!utilityConfig) {
+              throw new Error(`Unknown utility function: ${utilityType}`);
+            }
+            
+            const defaults = {};
+            Object.keys(utilityConfig.config.preferenceParams).forEach(key => {
+              defaults[key] = utilityConfig.config.preferenceParams[key].default;
+            });
+            
+            return defaults;
+          },
+          
+          // Get budget parameters defaults
+          getBudgetDefaults() {
+            const defaults = {};
+            Object.keys(this.budgetParams).forEach(key => {
+              defaults[key] = this.budgetParams[key].default;
+            });
+            return defaults;
+          },
+          
+          // Get preference parameter definitions for UI generation
+          getPreferenceParams(utilityType = 'cobb-douglas') {
+            const utilityConfig = this.utilityFunctions[utilityType];
+            if (!utilityConfig) {
+              throw new Error(`Unknown utility function: ${utilityType}`);
+            }
+            return utilityConfig.config.preferenceParams;
+          },
+          
+          // Get budget parameter definitions for UI generation
+          getBudgetParams() {
+            return this.budgetParams;
+          },
+          
+          // Get visualization configuration for main consumer choice plot
+          getMainVisualizationConfig(utilityType = 'cobb-douglas') {
+            const utilityConfig = this.utilityFunctions[utilityType];
+            if (!utilityConfig) {
+              throw new Error(`Unknown utility function: ${utilityType}`);
+            }
+            return utilityConfig.config.mainVisualization;
+          },
+          
+          // Get visualization configuration for demand curve plot
+          getDemandVisualizationConfig(utilityType = 'cobb-douglas') {
+            const utilityConfig = this.utilityFunctions[utilityType];
+            if (!utilityConfig) {
+              throw new Error(`Unknown utility function: ${utilityType}`);
+            }
+            return utilityConfig.config.demandVisualization;
+          },
+          
+          // Get visualization configuration for Engel curve plot
+          getEngelVisualizationConfig(utilityType = 'cobb-douglas') {
+            const utilityConfig = this.utilityFunctions[utilityType];
+            if (!utilityConfig) {
+              throw new Error(`Unknown utility function: ${utilityType}`);
+            }
+            return utilityConfig.config.engelVisualization;
+          },
+          
+          // Get list of available utility functions for dropdown
+          getUtilityFunctionNames() {
+            return Object.keys(this.utilityFunctions).map(key => ({
+              key,
+              name: this.utilityFunctions[key].name,
+              mathForm: this.utilityFunctions[key].mathForm
+            }));
+          }
+        };
+        
+        // Export for use in other modules
+        if (typeof module !== 'undefined' && module.exports) {
+          module.exports = UmpConfig;
+        }
+        
+        // Make available globally for browser
+        if (typeof window !== 'undefined') {
+          window.UmpConfig = UmpConfig;
+        }
+    </script>
+    <script>
+        // Embedded Module: utilityMath.js
+        // Utility Mathematics for UMP Consumer Optimization App
+        // Contains all mathematical functions for consumer choice analysis
+        
+        const UtilityMath = {
+          
+          // Utility function definitions with pure mathematical operations
+          utilityFunctions: {
+            'cobb-douglas': {
+              // Utility function - extracts own parameters
+              utility: (x, y, config) => {
+                const { cd_A, cd_alpha, cd_beta } = config;
+                const safeX = Math.max(0.001, x);
+                const safeY = Math.max(0.001, y);
+                return cd_A * Math.pow(safeX, cd_alpha) * Math.pow(safeY, cd_beta);
+              },
+              
+              // Marginal utilities
+              marginalX: (x, y, config) => {
+                const { cd_A, cd_alpha, cd_beta } = config;
+                const safeX = Math.max(0.001, x);
+                const safeY = Math.max(0.001, y);
+                return cd_A * cd_alpha * Math.pow(safeX, cd_alpha - 1) * Math.pow(safeY, cd_beta);
+              },
+              
+              marginalY: (x, y, config) => {
+                const { cd_A, cd_alpha, cd_beta } = config;
+                const safeX = Math.max(0.001, x);
+                const safeY = Math.max(0.001, y);
+                return cd_A * cd_beta * Math.pow(safeX, cd_alpha) * Math.pow(safeY, cd_beta - 1);
+              },
+              
+              // Walrasian demand solver (UMP: maximize utility subject to budget)
+              solveUMP: (config) => {
+                const { cd_A, cd_alpha, cd_beta, income, priceX, priceY } = config;
+                
+                // Cobb-Douglas optimal demands
+                const x = (cd_alpha / (cd_alpha + cd_beta)) * (income / priceX);
+                const y = (cd_beta / (cd_alpha + cd_beta)) * (income / priceY);
+                const utility = cd_A * Math.pow(x, cd_alpha) * Math.pow(y, cd_beta);
+                
+                return { 
+                  x: Math.max(0.001, x), 
+                  y: Math.max(0.001, y), 
+                  utility, 
+                  expenditure: income 
+                };
+              },
+              
+              // Hicksian demand solver (EMP: minimize expenditure subject to utility)
+              solveEMP: (targetUtility, priceX, priceY, config) => {
+                const { cd_A, cd_alpha, cd_beta } = config;
+                
+                // Handle edge cases
+                if (targetUtility <= 0 || cd_A <= 0) {
+                  return { x: 0.001, y: 0.001, expenditure: priceX * 0.001 + priceY * 0.001 };
+                }
+                
+                const denominator = cd_alpha + cd_beta;
+                const ratio = priceY / priceX;
+                const utilityRatio = targetUtility / cd_A;
+                
+                // Cobb-Douglas Hicksian demand formulas
+                const x = Math.pow(utilityRatio, 1/denominator) * 
+                          Math.pow(ratio, cd_beta/denominator) * 
+                          Math.pow(cd_alpha/cd_beta, cd_beta/denominator);
+                          
+                const y = Math.pow(utilityRatio, 1/denominator) * 
+                          Math.pow(1/ratio, cd_alpha/denominator) * 
+                          Math.pow(cd_beta/cd_alpha, cd_alpha/denominator);
+                
+                const expenditure = priceX * x + priceY * y;
+                
+                return { x: Math.max(0.001, x), y: Math.max(0.001, y), expenditure };
+              },
+              
+              // Generate indifference curve points for Cobb-Douglas utility
+              generateIndifferenceCurve: (targetUtility, maxX, maxY, config, numPoints = 100) => {
+                const { cd_A, cd_alpha, cd_beta } = config;
+                const points = [];
+                
+                for (let i = 0; i <= numPoints; i++) {
+                  const x = (i / numPoints) * maxX;
+                  if (x <= 0.001) continue;
+                  
+                  try {
+                    const y = Math.pow(targetUtility / (cd_A * Math.pow(x, cd_alpha)), 1 / cd_beta);
+                    if (y > 0 && isFinite(y)) {
+                      points.push({ x, y });
+                    }
+                  } catch (e) {
+                    // Skip invalid points
+                  }
+                }
+                
+                return {
+                  points: points,
+                  curveType: 'smooth',
+                  metadata: {
+                    utilityLevel: targetUtility,
+                    description: `Cobb-Douglas IC: U=${targetUtility.toFixed(2)}`
+                  }
+                };
+              }
+            },
+            
+            'perfect-substitutes': {
+              utility: (x, y, config) => {
+                const { ps_a, ps_b } = config;
+                return ps_a * Math.max(0, x) + ps_b * Math.max(0, y);
+              },
+              
+              marginalX: (x, y, config) => config.ps_a,
+              marginalY: (x, y, config) => config.ps_b,
+              
+              solveUMP: (config) => {
+                const { ps_a, ps_b, income, priceX, priceY } = config;
+                
+                const costPerUtilityX = priceX / ps_a;
+                const costPerUtilityY = priceY / ps_b;
+                
+                if (costPerUtilityX < costPerUtilityY) {
+                  // X is more cost-effective
+                  const x = income / priceX;
+                  const y = 0.001;
+                  const utility = ps_a * x + ps_b * y;
+                  return { x, y, utility, expenditure: income };
+                } else if (costPerUtilityY < costPerUtilityX) {
+                  // Y is more cost-effective
+                  const x = 0.001;
+                  const y = income / priceY;
+                  const utility = ps_a * x + ps_b * y;
+                  return { x, y, utility, expenditure: income };
+                } else {
+                  // Indifferent case - choose interior solution
+                  const x = income / (2 * priceX);
+                  const y = income / (2 * priceY);
+                  const utility = ps_a * x + ps_b * y;
+                  return { x, y, utility, expenditure: income };
+                }
+              },
+              
+              solveEMP: (targetUtility, priceX, priceY, config) => {
+                const { ps_a, ps_b } = config;
+                
+                if (targetUtility <= 0) {
+                  return { x: 0.001, y: 0.001, expenditure: priceX * 0.001 + priceY * 0.001 };
+                }
+                
+                const costPerUtilityX = priceX / ps_a;
+                const costPerUtilityY = priceY / ps_b;
+                
+                if (costPerUtilityX < costPerUtilityY) {
+                  // Consume only X
+                  return {
+                    x: targetUtility / ps_a,
+                    y: 0.001,
+                    expenditure: priceX * (targetUtility / ps_a) + priceY * 0.001
+                  };
+                } else if (costPerUtilityY < costPerUtilityX) {
+                  // Consume only Y
+                  return {
+                    x: 0.001,
+                    y: targetUtility / ps_b,
+                    expenditure: priceX * 0.001 + priceY * (targetUtility / ps_b)
+                  };
+                } else {
+                  // Indifferent case - choose interior solution
+                  const x = targetUtility / (2 * ps_a);
+                  const y = targetUtility / (2 * ps_b);
+                  return {
+                    x, y,
+                    expenditure: priceX * x + priceY * y
+                  };
+                }
+              },
+              
+              // Generate indifference curve points for Perfect Substitutes utility
+              generateIndifferenceCurve: (targetUtility, maxX, maxY, config, numPoints = 100) => {
+                const { ps_a, ps_b } = config;
+                const points = [];
+                
+                // Perfect substitutes have linear indifference curves
+                // Two points define the line: (0, targetUtility/ps_b) and (targetUtility/ps_a, 0)
+                const yIntercept = targetUtility / ps_b;
+                const xIntercept = targetUtility / ps_a;
+                
+                // Always add intercept points - let canvas clipping handle bounds
+                if (yIntercept > 0) {
+                  points.push({ x: 0, y: yIntercept });
+                }
+                if (xIntercept > 0) {
+                  points.push({ x: xIntercept, y: 0 });
+                }
+                
+                // Add intermediate points if both intercepts are within bounds for smoother rendering
+                if (points.length === 2) {
+                  for (let i = 1; i < numPoints; i++) {
+                    const x = (i / numPoints) * xIntercept;
+                    const y = (targetUtility - ps_a * x) / ps_b;
+                    if (y >= 0 && y <= maxY) {
+                      points.splice(-1, 0, { x, y }); // Insert before last point
+                    }
+                  }
+                }
+                
+                return {
+                  points: points,
+                  curveType: 'linear',
+                  metadata: {
+                    utilityLevel: targetUtility,
+                    description: `Perfect Substitutes IC: U=${targetUtility.toFixed(2)}`
+                  }
+                };
+              }
+            },
+        
+            'perfect-complements': {
+              utility: (x, y, config) => {
+                const { pc_A, pc_a, pc_b } = config;
+                const safeX = Math.max(0, x);
+                const safeY = Math.max(0, y);
+                return pc_A * Math.min(pc_a * safeX, pc_b * safeY);
+              },
+              
+              marginalX: (x, y, config) => {
+                const { pc_A, pc_a, pc_b } = config;
+                const safeX = Math.max(0.001, x);
+                const safeY = Math.max(0.001, y);
+                // At the kink point (optimal ratio), marginals are undefined
+                // Away from kink: MUx = A*a if ax < by, 0 if ax > by
+                return (pc_a * safeX < pc_b * safeY) ? pc_A * pc_a : 0;
+              },
+              
+              marginalY: (x, y, config) => {
+                const { pc_A, pc_a, pc_b } = config;
+                const safeX = Math.max(0.001, x);
+                const safeY = Math.max(0.001, y);
+                // At the kink point (optimal ratio), marginals are undefined  
+                // Away from kink: MUy = A*b if by < ax, 0 if by > ax
+                return (pc_b * safeY < pc_a * safeX) ? pc_A * pc_b : 0;
+              },
+              
+              solveUMP: (config) => {
+                const { pc_A, pc_a, pc_b, income, priceX, priceY } = config;
+                
+                // Perfect complements optimal consumption is always at the kink point
+                // where ax = by, i.e., x/y = b/a
+                // Budget constraint: px*x + py*y = income
+                // Substituting y = (a/b)*x: px*x + py*(a/b)*x = income
+                // Solving: x = income / (px + py*a/b)
+                
+                const x = income / (priceX + priceY * pc_a / pc_b);
+                const y = (pc_a / pc_b) * x;
+                const utility = pc_A * Math.min(pc_a * x, pc_b * y);
+                
+                return { 
+                  x: Math.max(0.001, x), 
+                  y: Math.max(0.001, y), 
+                  utility, 
+                  expenditure: income 
+                };
+              },
+              
+              solveEMP: (targetUtility, priceX, priceY, config) => {
+                const { pc_A, pc_a, pc_b } = config;
+                
+                if (targetUtility <= 0 || pc_A <= 0) {
+                  return { x: 0.001, y: 0.001, expenditure: priceX * 0.001 + priceY * 0.001 };
+                }
+                
+                // For perfect complements, optimal consumption is always at kink: ax = by
+                // At optimum: U = A * min(ax, by) = A * ax = A * by
+                // So: ax = by = targetUtility/A
+                // Therefore: x = targetUtility/(A*a) and y = targetUtility/(A*b)
+                
+                const x = targetUtility / (pc_A * pc_a);
+                const y = targetUtility / (pc_A * pc_b);
+                const expenditure = priceX * x + priceY * y;
+                
+                return { 
+                  x: Math.max(0.001, x), 
+                  y: Math.max(0.001, y), 
+                  expenditure 
+                };
+              },
+              
+              // Generate indifference curve points for Perfect Complements utility
+              generateIndifferenceCurve: (targetUtility, maxX, maxY, config, numPoints = 100) => {
+                const { pc_A, pc_a, pc_b } = config;
+                
+                if (targetUtility <= 0 || pc_A <= 0) {
+                  return {
+                    points: [],
+                    curveType: 'L-shaped',
+                    metadata: {
+                      utilityLevel: targetUtility,
+                      description: `Perfect Complements IC: U=${targetUtility.toFixed(2)}`,
+                      cornerX: 0,
+                      cornerY: 0,
+                      maxX: maxX,
+                      maxY: maxY
+                    }
+                  };
+                }
+                
+                // Perfect complements have L-shaped indifference curves
+                // Kink point where ax = by, utility = A * ax = A * by = targetUtility
+                // So corner is at: x = targetUtility/(A*a), y = targetUtility/(A*b)
+                
+                const cornerX = targetUtility / (pc_A * pc_a);
+                const cornerY = targetUtility / (pc_A * pc_b);
+                
+                return {
+                  points: [], // Empty - L-shapes handled by drawLShape method
+                  curveType: 'L-shaped',
+                  metadata: {
+                    utilityLevel: targetUtility,
+                    description: `Perfect Complements IC: U=${targetUtility.toFixed(2)}`,
+                    cornerX: Math.max(0.001, cornerX),
+                    cornerY: Math.max(0.001, cornerY),
+                    maxX: maxX,
+                    maxY: maxY
+                  }
+                };
+              }
+            },
+        
+            'ces': {
+              utility: (x, y, config) => {
+                const { ces_a, ces_rho } = config;
+                const ces_b = 1 - ces_a; // Standard form: weights sum to 1
+                const safeX = Math.max(0.001, x);
+                const safeY = Math.max(0.001, y);
+                const EPS = 1e-6;
+        
+                if (Math.abs(ces_rho) < EPS) {
+                  // ρ → 0 : Cobb–Douglas 
+                  return Math.pow(safeX, ces_a) * Math.pow(safeY, ces_b);
+                }
+                if (Math.abs(ces_rho - 1) < EPS) {
+                  // Perfect substitutes
+                  return ces_a * safeX + ces_b * safeY;
+                }
+                // Standard CES
+                const S = ces_a * Math.pow(safeX, ces_rho) + ces_b * Math.pow(safeY, ces_rho);
+                return Math.pow(S, 1 / ces_rho);
+              },
+        
+              marginalX: (x, y, config) => {
+                const { ces_a, ces_rho } = config;
+                const ces_b = 1 - ces_a; // Standard form: weights sum to 1
+                const safeX = Math.max(0.001, x);
+                const safeY = Math.max(0.001, y);
+                const EPS = 1e-6;
+        
+                if (Math.abs(ces_rho) < EPS) {
+                  // ρ → 0 : Cobb–Douglas marginal utility
+                  return ces_a * Math.pow(safeX, ces_a - 1) * Math.pow(safeY, ces_b);
+                }
+                if (Math.abs(ces_rho - 1) < EPS) return ces_a;
+        
+                const S = ces_a * Math.pow(safeX, ces_rho) + ces_b * Math.pow(safeY, ces_rho);
+                return ces_a * Math.pow(safeX, ces_rho - 1) * Math.pow(S, (1 - ces_rho) / ces_rho);
+              },
+        
+              marginalY: (x, y, config) => {
+                const { ces_a, ces_rho } = config;
+                const ces_b = 1 - ces_a; // Standard form: weights sum to 1
+                const safeX = Math.max(0.001, x);
+                const safeY = Math.max(0.001, y);
+                const EPS = 1e-6;
+        
+                if (Math.abs(ces_rho) < EPS) {
+                  // ρ → 0 : Cobb–Douglas marginal utility
+                  return ces_b * Math.pow(safeX, ces_a) * Math.pow(safeY, ces_b - 1);
+                }
+                if (Math.abs(ces_rho - 1) < EPS) return ces_b;
+        
+                const S = ces_a * Math.pow(safeX, ces_rho) + ces_b * Math.pow(safeY, ces_rho);
+                return ces_b * Math.pow(safeY, ces_rho - 1) * Math.pow(S, (1 - ces_rho) / ces_rho);
+              },
+        
+              solveUMP: (config) => {
+                const { ces_a, ces_rho, income, priceX, priceY } = config;
+                const ces_b = 1 - ces_a; // Standard form: weights sum to 1
+                const EPS = 1e-6;
+        
+                if (Math.abs(ces_rho) < EPS) {
+                  // ρ → 0 : Cobb–Douglas optimal bundle
+                  const x = ces_a * (income / priceX);
+                  const y = ces_b * (income / priceY);
+                  const U = Math.pow(x, ces_a) * Math.pow(y, ces_b);
+                  return { x, y, utility: U, expenditure: income };
+                }
+                if (Math.abs(ces_rho - 1) < EPS) {
+                  // perfect substitutes: corner on best bang-per-buck
+                  if (ces_a / priceX >= ces_b / priceY) return { x: income / priceX, y: 0.001, utility: ces_a * (income / priceX), expenditure: income };
+                  return { x: 0.001, y: income / priceY, utility: ces_b * (income / priceY), expenditure: income };
+                }
+        
+                // General CES: use y/x ratio
+                const r = Math.pow((priceY / priceX) * (ces_a / ces_b), 1 / (ces_rho - 1)); // r = y/x
+                const x = income / (priceX + priceY * r);
+                const y = r * x;
+                const U = Math.pow(ces_a * Math.pow(x, ces_rho) + ces_b * Math.pow(y, ces_rho), 1 / ces_rho);
+                return { x: Math.max(0.001, x), y: Math.max(0.001, y), utility: U, expenditure: income };
+              },
+        
+              solveEMP: (targetUtility, priceX, priceY, config) => {
+                const { ces_a, ces_rho } = config;
+                const ces_b = 1 - ces_a; // Standard form: weights sum to 1
+                const EPS = 1e-6;
+                if (targetUtility <= 0) return { x: 0.001, y: 0.001, expenditure: priceX * 0.001 + priceY * 0.001 };
+        
+                if (Math.abs(ces_rho) < EPS) {
+                  // ρ → 0 : Cobb–Douglas Hicksian
+                  const k = Math.pow(ces_a, -ces_a) * Math.pow(ces_b, -ces_b);
+                  const e = k * targetUtility * Math.pow(priceX, ces_a) * Math.pow(priceY, ces_b);
+                  const x = ces_a * e / priceX;
+                  const y = ces_b * e / priceY;
+                  return { x, y, expenditure: e };
+                }
+        
+                if (Math.abs(ces_rho - 1) < EPS) {
+                  // perfect substitutes Hicksian: buy only the cheaper utility-per-dollar
+                  if (priceX / ces_a <= priceY / ces_b) return { x: targetUtility / ces_a, y: 0.001, expenditure: priceX * (targetUtility / ces_a) + priceY * 0.001 };
+                  return { x: 0.001, y: targetUtility / ces_b, expenditure: priceX * 0.001 + priceY * (targetUtility / ces_b) };
+                }
+        
+                // General CES Hicksian via ratio + constraint
+                const r = Math.pow((priceY / priceX) * (ces_a / ces_b), 1 / (ces_rho - 1)); // y/x
+                const denom = Math.pow(ces_a + ces_b * Math.pow(r, ces_rho), 1 / ces_rho);
+                const x = targetUtility / denom;
+                const y = r * x;
+                const expenditure = priceX * x + priceY * y;
+                return { x: Math.max(0.001, x), y: Math.max(0.001, y), expenditure };
+              },
+        
+              generateIndifferenceCurve: (U, maxX, maxY, config, numPoints = 100) => {
+                const { ces_a, ces_rho } = config;
+                const ces_b = 1 - ces_a; // Standard form: weights sum to 1
+                const EPS = 1e-6;
+                const pts = [];
+        
+                if (Math.abs(ces_rho) < EPS) {
+                  // ρ ≈ 0: Cobb-Douglas case
+                  for (let i = 0; i <= numPoints; i++) {
+                    const x = (i / numPoints) * maxX;
+                    if (x <= 0.001) continue;
+                    const y = Math.pow(U / Math.pow(x, ces_a), 1 / ces_b);
+                    if (y > 0 && isFinite(y)) pts.push({ x, y });
+                  }
+                } else if (Math.abs(ces_rho - 1) < EPS) {
+                  // ρ ≈ 1: Perfect substitutes case - linear indifference curves
+                  const yInt = U / ces_b, xInt = U / ces_a;
+                  
+                  // Always add intercept points for proper line drawing with clipping
+                  if (yInt > 0) pts.push({ x: 0, y: yInt });
+                  if (xInt > 0) pts.push({ x: xInt, y: 0 });
+                } else {
+                  // General CES case: adaptive curve generation
+                  // Find minimum valid x by working backwards from y = maxY
+                  const yLimit = maxY;
+                  const term = (Math.pow(U, ces_rho) - ces_b * Math.pow(yLimit, ces_rho)) / ces_a;
+                  const xMin = Math.max(0.001, term > 0 ? Math.pow(term, 1 / ces_rho) : 0.001);
+        
+                  for (let i = 0; i <= numPoints; i++) {
+                    const t = i / numPoints;  // t from 0 to 1
+                    // Logarithmic spacing: more points near xMin where curve is steepest
+                    const x = xMin + (maxX - xMin) * (Math.exp(t * Math.log(10)) - 1) / 9;
+                    if (x <= 0.001) continue;
+        
+                    const termCalc = (Math.pow(U, ces_rho) - ces_a * Math.pow(x, ces_rho)) / ces_b;
+                    if (termCalc > 0) {
+                      const y = Math.pow(termCalc, 1 / ces_rho);
+                      if (y > 0 && isFinite(y)) pts.push({ x, y });
+                    }
+                  }
+                }
+        
+                return { 
+                  points: pts, 
+                  curveType: Math.abs(ces_rho - 1) < EPS ? 'linear' : 'smooth',
+                  metadata: { 
+                    utilityLevel: U, 
+                    description: `CES IC: U=${U.toFixed(2)}, ρ=${ces_rho.toFixed(3)}` 
+                  } 
+                };
+              }
+            },
+        
+            'quasilinear': {
+              // Utility function: U(x,y) = x^α + by
+              utility: (x, y, config) => {
+                const { ql_alpha, ql_b } = config;
+                const safeX = Math.max(0.001, x);
+                const safeY = Math.max(0, y);
+                return Math.pow(safeX, ql_alpha) + ql_b * safeY;
+              },
+        
+              // Marginal utility of X: MUx = α * x^(α-1)
+              marginalX: (x, y, config) => {
+                const { ql_alpha } = config;
+                const safeX = Math.max(0.001, x);
+                return ql_alpha * Math.pow(safeX, ql_alpha - 1);
+              },
+        
+              // Marginal utility of Y: MUy = b (constant)
+              marginalY: (x, y, config) => {
+                const { ql_b } = config;
+                return ql_b;
+              },
+        
+              // Solve UMP: maximize x^α + by subject to Px*x + Py*y = I
+              solveUMP: (config) => {
+                const { ql_alpha, ql_b, income, priceX, priceY } = config;
+        
+                // Helper function to calculate utility
+                const calcUtility = (x, y) => Math.pow(Math.max(0.001, x), ql_alpha) + ql_b * Math.max(0, y);
+                
+                // Corner solution candidates
+                const cornerX = { x: income / priceX, y: 0.001, expenditure: income };
+                cornerX.utility = calcUtility(cornerX.x, cornerX.y);
+                
+                const cornerY = { x: 0.001, y: (income - priceX * 0.001) / priceY, expenditure: income };
+                cornerY.utility = calcUtility(cornerY.x, cornerY.y);
+        
+                // For α = 1 (linear in x), always corner solution
+                if (Math.abs(ql_alpha - 1) < 0.001) {
+                  const utilityPerDollarX = 1 / priceX;
+                  const utilityPerDollarY = ql_b / priceY;
+                  
+                  if (utilityPerDollarX >= utilityPerDollarY) {
+                    return cornerX;
+                  } else {
+                    return cornerY;
+                  }
+                }
+        
+                // For general case, try interior solution first
+                // Interior FOC: α * x^(α-1) / b = Px / Py
+                // Rearranging: x = [(b * Px) / (α * Py)]^(1/(α-1))
+                
+                if (ql_alpha - 1 === 0) {
+                  // Should be handled above, but for numerical precision
+                  return cornerY; // Default to corner Y
+                }
+        
+                const exponent = 1 / (ql_alpha - 1);
+                const base = (ql_b * priceX) / (ql_alpha * priceY);
+                
+                if (base <= 0 || !isFinite(exponent)) {
+                  // Interior solution not feasible
+                  return cornerY.utility > cornerX.utility ? cornerY : cornerX;
+                }
+        
+                const xInterior = Math.pow(base, exponent);
+                const yInterior = (income - priceX * xInterior) / priceY;
+        
+                // Check if interior solution is feasible
+                if (xInterior > 0.001 && yInterior > 0.001) {
+                  const interiorSolution = {
+                    x: xInterior,
+                    y: yInterior,
+                    utility: calcUtility(xInterior, yInterior),
+                    expenditure: income
+                  };
+                  
+                  // Compare interior with both corners and return the best
+                  if (interiorSolution.utility >= cornerX.utility && interiorSolution.utility >= cornerY.utility) {
+                    return interiorSolution;
+                  }
+                }
+        
+                // Interior not feasible or not optimal, return best corner
+                return cornerY.utility > cornerX.utility ? cornerY : cornerX;
+              },
+        
+              // Solve EMP: minimize Px*x + Py*y subject to x^α + by = U
+              solveEMP: (targetUtility, priceX, priceY, config) => {
+                const { ql_alpha, ql_b } = config;
+                
+                if (targetUtility <= 0 || ql_b <= 0) {
+                  return { x: 0.001, y: 0.001, expenditure: priceX * 0.001 + priceY * 0.001 };
+                }
+        
+                // Helper function to check constraint satisfaction
+                const satisfiesConstraint = (x, y) => {
+                  const utility = Math.pow(Math.max(0.001, x), ql_alpha) + ql_b * Math.max(0, y);
+                  return Math.abs(utility - targetUtility) < 0.001;
+                };
+        
+                // Corner solution candidates
+                // Corner 1: x minimal, solve for y from constraint
+                const x1 = 0.001;
+                const y1 = Math.max(0.001, (targetUtility - Math.pow(x1, ql_alpha)) / ql_b);
+                const corner1 = { x: x1, y: y1, expenditure: priceX * x1 + priceY * y1 };
+                
+                // Corner 2: y minimal, solve for x from constraint  
+                const y2 = 0.001;
+                const x2Constraint = targetUtility - ql_b * y2; // x^α = targetUtility - b*y2
+                let corner2 = null;
+                
+                if (x2Constraint > 0 && ql_alpha > 0) {
+                  const x2 = Math.pow(x2Constraint, 1/ql_alpha);
+                  if (x2 > 0.001) {
+                    corner2 = { x: x2, y: y2, expenditure: priceX * x2 + priceY * y2 };
+                  }
+                }
+        
+                // For α = 1 (linear case), analytical solution exists
+                if (Math.abs(ql_alpha - 1) < 0.001) {
+                  // U = x + by, minimize Px*x + Py*y
+                  // Substitute y = (U - x)/b: minimize Px*x + Py*(U - x)/b
+                  // = Px*x + (Py*U)/b - (Py*x)/b = x*(Px - Py/b) + (Py*U)/b
+                  
+                  const coefficient = priceX - priceY / ql_b;
+                  
+                  if (Math.abs(coefficient) < 0.001) {
+                    // Indifferent between x and y, choose corner with lower cost
+                    return corner2 && corner2.expenditure < corner1.expenditure ? corner2 : corner1;
+                  } else if (coefficient > 0) {
+                    // Minimize x (choose corner1)
+                    return corner1;
+                  } else {
+                    // Minimize coefficient, so maximize x (choose corner2 if feasible)
+                    return corner2 ? corner2 : corner1;
+                  }
+                }
+        
+                // General case: try interior solution
+                // FOC: α*x^(α-1) = λ*Px and b = λ*Py
+                // Therefore: α*x^(α-1)/b = Px/Py, so x = [(b*Px)/(α*Py)]^(1/(α-1))
+                
+                if (Math.abs(ql_alpha - 1) < 0.001) {
+                  // Already handled above, but for safety
+                  return corner1;
+                }
+        
+                const exponent = 1 / (ql_alpha - 1);
+                const base = (ql_b * priceX) / (ql_alpha * priceY);
+                
+                if (base > 0 && isFinite(exponent)) {
+                  const xInterior = Math.pow(base, exponent);
+                  const yInterior = Math.max(0.001, (targetUtility - Math.pow(xInterior, ql_alpha)) / ql_b);
+                  
+                  // Check if interior solution is feasible and satisfies constraint
+                  if (xInterior > 0.001 && yInterior > 0.001 && satisfiesConstraint(xInterior, yInterior)) {
+                    const interiorSolution = {
+                      x: xInterior,
+                      y: yInterior,
+                      expenditure: priceX * xInterior + priceY * yInterior
+                    };
+                    
+                    // Compare with corners and choose minimum expenditure
+                    const solutions = [interiorSolution, corner1];
+                    if (corner2) solutions.push(corner2);
+                    
+                    return solutions.reduce((min, current) => 
+                      current.expenditure < min.expenditure ? current : min
+                    );
+                  }
+                }
+        
+                // Interior not feasible, choose best corner
+                if (corner2) {
+                  return corner2.expenditure < corner1.expenditure ? corner2 : corner1;
+                }
+                return corner1;
+              },
+        
+              // Generate indifference curve points for quasilinear utility
+              generateIndifferenceCurve: (targetUtility, maxX, maxY, config, numPoints = 100) => {
+                const { ql_alpha, ql_b } = config;
+                const points = [];
+        
+                for (let i = 0; i <= numPoints; i++) {
+                  const x = (i / numPoints) * maxX;
+                  if (x <= 0.001) continue;
+        
+                  try {
+                    // From U = x^α + by, solve for y: y = (U - x^α)/b
+                    const y = (targetUtility - Math.pow(x, ql_alpha)) / ql_b;
+                    
+                    if (y >= 0 && isFinite(y)) {
+                      points.push({ x, y });
+                    }
+                  } catch (e) {
+                    // Skip invalid points
+                  }
+                }
+        
+                return {
+                  points: points,
+                  curveType: 'smooth',
+                  metadata: {
+                    utilityLevel: targetUtility,
+                    description: `Quasilinear IC: U=${targetUtility.toFixed(2)}, α=${ql_alpha.toFixed(1)}, b=${ql_b.toFixed(1)}`
+                  }
+                };
+              }
+            }
+          },
+          
+          // Consumer optimization analysis - main function
+          performConsumerOptimization: (utilityType, config) => {
+            const utilityFunc = UtilityMath.utilityFunctions[utilityType];
+            
+            if (!utilityFunc) {
+              console.error(`Unknown utility function: ${utilityType}`);
+              return null;
+            }
+            
+            // Solve UMP to find optimal bundle
+            const optimalBundle = utilityFunc.solveUMP(config);
+            
+            // Calculate marginal rate of substitution at optimal point
+            const mrs = utilityFunc.marginalX(optimalBundle.x, optimalBundle.y, config) / 
+                        utilityFunc.marginalY(optimalBundle.x, optimalBundle.y, config);
+            
+            // Calculate price ratio for tangency condition
+            const priceRatio = config.priceX / config.priceY;
+            
+            // Calculate budget shares
+            const budgetShareX = (config.priceX * optimalBundle.x) / config.income;
+            const budgetShareY = (config.priceY * optimalBundle.y) / config.income;
+            
+            // Check tangency condition (equilibrium satisfied when MRS ≈ price ratio)
+            const tangencyConditionSatisfied = Math.abs(mrs - priceRatio) < 0.01;
+            
+            return {
+              optimalBundle,
+              mrs,
+              priceRatio,
+              budgetShares: {
+                x: budgetShareX,
+                y: budgetShareY
+              },
+              tangencyConditionSatisfied
+            };
+          },
+          
+          // Generate Walrasian demand curve data for visualization
+          generateWalrasianDemand: (utilityType, config, priceRange) => {
+            const utilityFunc = UtilityMath.utilityFunctions[utilityType];
+            
+            if (!utilityFunc) return [];
+            
+            return priceRange.map(px => {
+              const tempConfig = { ...config, priceX: px };
+              const solution = utilityFunc.solveUMP(tempConfig);
+              return { 
+                priceX: px, 
+                quantityX: solution.x, 
+                utility: solution.utility 
+              };
+            });
+          },
+          
+          // Generate Hicksian demand curve data for comparison
+          generateHicksianDemand: (utilityType, config, targetUtility, priceRange) => {
+            const utilityFunc = UtilityMath.utilityFunctions[utilityType];
+            const { priceY } = config;
+            
+            if (!utilityFunc) return [];
+            
+            return priceRange.map(px => {
+              const solution = utilityFunc.solveEMP(targetUtility, px, priceY, config);
+              return { 
+                priceX: px, 
+                quantityX: solution.x 
+              };
+            });
+          },
+          
+          // Generate Engel curve data (quantity vs income)
+          generateEngelCurve: (utilityType, config, incomeRange) => {
+            const utilityFunc = UtilityMath.utilityFunctions[utilityType];
+            
+            if (!utilityFunc) return [];
+            
+            return incomeRange.map(income => {
+              const tempConfig = { ...config, income };
+              const solution = utilityFunc.solveUMP(tempConfig);
+              return {
+                income,
+                quantityX: solution.x,
+                quantityY: solution.y,
+                utility: solution.utility
+              };
+            });
+          },
+          
+          // Calculate dynamic utility levels using ray sampling from origin to top-right corner
+          calculateDynamicUtilityLevels: (utilityType, config, maxX, maxY, numPoints) => {
+            const utilityFunc = UtilityMath.utilityFunctions[utilityType];
+            
+            if (!utilityFunc || !utilityFunc.utility) {
+              console.error(`Utility calculation not available for ${utilityType}`);
+              return [];
+            }
+            
+            const utilityLevels = [];
+            
+            // Generate points along the ray from origin to (maxX, maxY)
+            for (let i = 1; i <= numPoints; i++) {
+              const t = i / (numPoints + 1); // Avoid points at (0,0) and (maxX, maxY)
+              const x = t * maxX;
+              const y = t * maxY;
+              
+              try {
+                // Calculate utility at this point
+                const utility = utilityFunc.utility(x, y, config);
+                utilityLevels.push(utility);
+              } catch (error) {
+                console.warn(`Error calculating utility at (${x.toFixed(2)}, ${y.toFixed(2)}):`, error);
+              }
+            }
+            
+            // Sort utility levels to ensure they are in ascending order
+            return utilityLevels.sort((a, b) => a - b);
+          },
+          
+          // Generate indifference curve data points (dispatcher function)
+          generateIndifferenceCurve: (utilityType, config, targetUtility, maxX, maxY, numPoints = 100) => {
+            const utilityFunc = UtilityMath.utilityFunctions[utilityType];
+            
+            if (!utilityFunc || !utilityFunc.generateIndifferenceCurve) {
+              console.error(`Indifference curve generation not implemented for ${utilityType}`);
+              return {
+                points: [],
+                curveType: 'smooth',
+                metadata: {
+                  utilityLevel: targetUtility,
+                  description: `Unknown utility type: ${utilityType}`
+                }
+              };
+            }
+            
+            return utilityFunc.generateIndifferenceCurve(targetUtility, maxX, maxY, config, numPoints);
+          },
+          
+          // Calculate budget line endpoints
+          getBudgetLineEndpoints: (config, maxX, maxY) => {
+            const { income, priceX, priceY } = config;
+            
+            // Return true mathematical intercepts (no clamping to visual bounds)
+            const xIntercept = income / priceX;
+            const yIntercept = income / priceY;
+            
+            return {
+              xIntercept,
+              yIntercept,
+              slope: -priceX / priceY
+            };
+          }
+        };
+        
+        // Make available globally
+        window.UtilityMath = UtilityMath;
+    </script>
+    <script>
+        // Embedded Module: canvasUtils.js
+        // Canvas Utilities for EMP Visualization
+        // Provides drawing and coordinate transformation utilities
+        
+        const CanvasUtils = {
+          
+          // Initialize high-DPI canvas
+          initCanvas: (canvas, width = 500, height = 400) => {
+            const devicePixelRatio = window.devicePixelRatio || 1;
+            
+            canvas.width = width * devicePixelRatio;
+            canvas.height = height * devicePixelRatio;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            
+            const ctx = canvas.getContext('2d');
+            ctx.scale(devicePixelRatio, devicePixelRatio);
+            
+            // Clear with white background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+            
+            return { ctx, width, height };
+          },
+        
+          // Calculate responsive margins
+          calculateMargins: (width, height) => {
+            const minMargin = 30;
+            const marginRatio = 0.08;
+            
+            return {
+              top: Math.max(minMargin, Math.round(height * marginRatio)),
+              bottom: Math.max(minMargin + 15, Math.round(height * (marginRatio + 0.03))), // Space for x-axis labels and title
+              left: Math.max(minMargin + 12, Math.round(width * (marginRatio + 0.03))), // Space for y-axis labels and title
+              right: Math.max(minMargin, Math.round(width * marginRatio))
+            };
+          },
+        
+          // Create coordinate transformation
+          createTransform: (margins, width, height, maxX, maxY, minX = 0, minY = 0) => {
+            const drawWidth = width - margins.left - margins.right;
+            const drawHeight = height - margins.top - margins.bottom;
+            const scaleX = drawWidth / (maxX - minX);
+            const scaleY = drawHeight / (maxY - minY);
+            
+            return {
+              toCanvas: (x, y) => ({
+                x: margins.left + (x - minX) * scaleX,
+                y: height - margins.bottom - (y - minY) * scaleY
+              }),
+              fromCanvas: (canvasX, canvasY) => ({
+                x: minX + (canvasX - margins.left) / scaleX,
+                y: minY + (height - margins.bottom - canvasY) / scaleY
+              }),
+              scaleX,
+              scaleY,
+              drawWidth,
+              drawHeight
+            };
+          },
+        
+          // Draw coordinate axes
+          drawAxes: (ctx, margins, width, height, labelX = 'Quantity X', labelY = 'Quantity Y') => {
+            ctx.strokeStyle = '#374151';
+            ctx.lineWidth = 2;
+            
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(margins.left, height - margins.bottom);
+            ctx.lineTo(width - margins.right, height - margins.bottom);
+            ctx.stroke();
+            
+            // Y-axis  
+            ctx.beginPath();
+            ctx.moveTo(margins.left, height - margins.bottom);
+            ctx.lineTo(margins.left, margins.top);
+            ctx.stroke();
+            
+            // Axis labels
+            const fontSize = Math.max(12, Math.round(width * 0.024));
+            ctx.fillStyle = '#374151';
+            ctx.font = `${fontSize}px sans-serif`;
+            
+            // X-axis label
+            ctx.textAlign = 'center';
+            ctx.fillText(labelX, width / 2, height - 10);
+            
+            // Y-axis label (rotated)
+            ctx.save();
+            ctx.translate(15, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillText(labelY, 0, 0);
+            ctx.restore();
+            
+            return fontSize;
+          },
+        
+        
+          // Draw grid lines
+          drawGrid: (ctx, margins, width, height, transform, gridConfig = null) => {
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 1;
+            
+            if (!gridConfig) return;
+            
+            const { xPoints = [], yPoints = [] } = gridConfig;
+            
+            // Vertical grid lines
+            for (const x of xPoints) {
+              const pos = transform.toCanvas(x, 0);
+              ctx.beginPath();
+              ctx.moveTo(pos.x, margins.top);
+              ctx.lineTo(pos.x, height - margins.bottom);
+              ctx.stroke();
+            }
+            
+            // Horizontal grid lines
+            for (const y of yPoints) {
+              const pos = transform.toCanvas(0, y);
+              ctx.beginPath();
+              ctx.moveTo(margins.left, pos.y);
+              ctx.lineTo(width - margins.right, pos.y);
+              ctx.stroke();
+            }
+          },
+        
+          // Draw tick marks and labels
+          drawTicks: (ctx, margins, width, height, transform, gridConfig = null) => {
+            const fontSize = Math.max(10, Math.round(width * 0.02));
+            ctx.fillStyle = '#6b7280';
+            ctx.font = `${fontSize}px sans-serif`;
+            
+            if (!gridConfig) return;
+            
+            const { xPoints = [], yPoints = [] } = gridConfig;
+            
+            // X-axis ticks
+            ctx.textAlign = 'center';
+            for (const x of xPoints) {
+              const pos = transform.toCanvas(x, 0);
+              const label = x % 1 === 0 ? x.toString() : x.toFixed(1);
+              ctx.fillText(label, pos.x, height - margins.bottom + 20);
+            }
+            
+            // Y-axis ticks
+            ctx.textAlign = 'right';
+            for (const y of yPoints) {
+              const pos = transform.toCanvas(0, y);
+              const label = y % 1 === 0 ? y.toString() : y.toFixed(1);
+              ctx.fillText(label, margins.left - 8, pos.y + fontSize/3);
+            }
+          },
+        
+          // Draw a curve from data points
+          drawCurve: (ctx, points, transform, style = {}) => {
+            if (!points || points.length === 0) return;
+            
+            const {
+              color = '#1d4ed8',
+              lineWidth = 2,
+              dash = []
+            } = style;
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.setLineDash(dash);
+            
+            ctx.beginPath();
+            let firstPoint = true;
+            
+            for (const point of points) {
+              if (isFinite(point.x) && isFinite(point.y)) {
+                const canvasPos = transform.toCanvas(point.x, point.y);
+                if (firstPoint) {
+                  ctx.moveTo(canvasPos.x, canvasPos.y);
+                  firstPoint = false;
+                } else {
+                  ctx.lineTo(canvasPos.x, canvasPos.y);
+                }
+              }
+            }
+            
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset dash
+          },
+        
+          // Draw L-shaped curve for perfect complements
+          drawLShape: (ctx, cornerX, cornerY, maxX, maxY, transform, style = {}) => {
+            const {
+              color = '#1d4ed8',
+              lineWidth = 2
+            } = style;
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.setLineDash([]);
+            
+            // Draw horizontal segment from corner to right edge
+            const corner = transform.toCanvas(cornerX, cornerY);
+            const rightEdge = transform.toCanvas(maxX, cornerY);
+            
+            ctx.beginPath();
+            ctx.moveTo(corner.x, corner.y);
+            ctx.lineTo(rightEdge.x, rightEdge.y);
+            ctx.stroke();
+            
+            // Draw vertical segment from corner to top edge
+            const topEdge = transform.toCanvas(cornerX, maxY);
+            
+            ctx.beginPath();
+            ctx.moveTo(corner.x, corner.y);
+            ctx.lineTo(topEdge.x, topEdge.y);
+            ctx.stroke();
+          },
+        
+          // Draw a straight line (e.g., budget/expenditure line)
+          drawLine: (ctx, x1, y1, x2, y2, transform, style = {}) => {
+            const {
+              color = '#dc2626',
+              lineWidth = 3,
+              dash = []
+            } = style;
+            
+            const pos1 = transform.toCanvas(x1, y1);
+            const pos2 = transform.toCanvas(x2, y2);
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.setLineDash(dash);
+            
+            ctx.beginPath();
+            ctx.moveTo(pos1.x, pos1.y);
+            ctx.lineTo(pos2.x, pos2.y);
+            ctx.stroke();
+            
+            ctx.setLineDash([]); // Reset dash
+          },
+        
+          // Highlight a point with a circle
+          highlightPoint: (ctx, x, y, transform, style = {}) => {
+            const {
+              outerColor = '#dc2626',
+              innerColor = '#ffffff',
+              outerRadius = 6,
+              innerRadius = 3
+            } = style;
+            
+            const pos = transform.toCanvas(x, y);
+            
+            // Outer circle
+            ctx.fillStyle = outerColor;
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, outerRadius, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Inner circle
+            ctx.fillStyle = innerColor;
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, innerRadius, 0, 2 * Math.PI);
+            ctx.fill();
+          },
+        
+          // Add text label at a point
+          addLabel: (ctx, text, x, y, transform, style = {}) => {
+            const {
+              color = '#374151',
+              fontSize = 12,
+              fontWeight = 'normal',
+              offsetX = 10,
+              offsetY = -10,
+              align = 'left',
+              backgroundColor = 'rgba(255, 255, 255, 0.6)',
+              backgroundPadding = 0,
+              borderRadius = 0
+            } = style;
+            
+            const pos = transform.toCanvas(x, y);
+            
+            // Set up font for text metrics
+            ctx.font = `${fontWeight} ${fontSize}px sans-serif`;
+            
+            // Draw background if specified
+            if (backgroundColor) {
+              const metrics = ctx.measureText(text);
+              const textWidth = metrics.width;
+              const textHeight = fontSize;
+              
+              // Calculate background rectangle position and size
+              let bgX, bgY, bgWidth, bgHeight;
+              
+              if (align === 'left') {
+                bgX = pos.x + offsetX - backgroundPadding;
+                bgY = pos.y + offsetY - textHeight - backgroundPadding;
+                bgWidth = textWidth + 2 * backgroundPadding;
+                bgHeight = textHeight + 2 * backgroundPadding;
+              } else if (align === 'center') {
+                bgX = pos.x + offsetX - textWidth/2 - backgroundPadding;
+                bgY = pos.y + offsetY - textHeight - backgroundPadding;
+                bgWidth = textWidth + 2 * backgroundPadding;
+                bgHeight = textHeight + 2 * backgroundPadding;
+              } else { // 'right'
+                bgX = pos.x + offsetX - textWidth - backgroundPadding;
+                bgY = pos.y + offsetY - textHeight - backgroundPadding;
+                bgWidth = textWidth + 2 * backgroundPadding;
+                bgHeight = textHeight + 2 * backgroundPadding;
+              }
+              
+              // Draw rounded rectangle background
+              ctx.fillStyle = backgroundColor;
+              if (borderRadius > 0) {
+                ctx.beginPath();
+                ctx.roundRect(bgX, bgY, bgWidth, bgHeight, borderRadius);
+                ctx.fill();
+              } else {
+                ctx.fillRect(bgX, bgY, bgWidth, bgHeight);
+              }
+            }
+            
+            // Draw text - ensure font is set right before drawing
+            ctx.fillStyle = color;
+            ctx.textAlign = align;
+            ctx.font = `${fontWeight} ${fontSize}px sans-serif`;
+            ctx.fillText(text, pos.x + offsetX, pos.y + offsetY);
+          },
+        
+          // Set up clipping region
+          setupClipping: (ctx, margins, width, height) => {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(margins.left, margins.top, 
+                     width - margins.left - margins.right, 
+                     height - margins.top - margins.bottom);
+            ctx.clip();
+          },
+        
+          // Restore clipping
+          restoreClipping: (ctx) => {
+            ctx.restore();
+          },
+        
+          // Create numeric range array
+          createRange: (min = 0.5, max = 5.0, step = 0.1) => {
+            const range = [];
+            for (let p = min; p <= max; p += step) {
+              range.push(Number(p.toFixed(2)));
+            }
+            return range;
+          }
+        };
+        
+        // Make available globally  
+        window.CanvasUtils = CanvasUtils;
+    </script>
+
+    <!-- Original Inline Scripts -->
+
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          displayMath: [['$$', '$$'], ['\\[', '\\]']]
+        },
+        startup: {
+          ready: () => {
+            MathJax.startup.defaultReady();
+          }
+        }
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f1f5f9;
+        }
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+        }
+        .slider::-moz-range-thumb {
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            border: none;
+        }
+        canvas {
+            display: block;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <!-- Load configuration and math modules -->
+    <script type="text/javascript">
+        const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+        // Main Consumer Optimization Component
+        const UmpVisualization = () => {
+            // State for selected utility function
+            const [selectedUtilityFunction, setSelectedUtilityFunction] = useState('cobb-douglas');
+            
+            // State for all parameters - initialized with defaults
+            const [params, setParams] = useState(() => UmpConfig.getAllDefaults());
+            
+            // Canvas refs
+            const mainCanvasRef = useRef();
+            const demandCanvasRef = useRef();
+            const engelCanvasRef = useRef();
+
+            // Helper functions for parameter management
+            const updateParam = useCallback((key, value) => {
+                setParams(prev => ({ ...prev, [key]: value }));
+            }, []);
+
+            const resetBudgetParams = useCallback(() => {
+                setParams(prev => ({ ...prev, ...UmpConfig.getBudgetDefaults() }));
+            }, []);
+            
+            const resetPreferenceParams = useCallback(() => {
+                setParams(prev => ({ ...prev, ...UmpConfig.getPreferenceDefaults(selectedUtilityFunction) }));
+            }, [selectedUtilityFunction]);
+
+            // Calculate consumer optimization
+            const optimizationAnalysis = useMemo(() => {
+                return UtilityMath.performConsumerOptimization(selectedUtilityFunction, params);
+            }, [selectedUtilityFunction, params]);
+
+            // Generic function to render parameter controls
+            const renderParameterControls = useCallback((parameterConfig) => {
+                return Object.keys(parameterConfig).map(key => {
+                    const param = parameterConfig[key];
+                    return React.createElement('div', {
+                        key: key,
+                        className: "space-y-1"
+                    }, [
+                        React.createElement('label', {
+                            key: 'label',
+                            className: "block text-sm font-medium text-gray-600"
+                        }, param.label),
+                        React.createElement('div', {
+                            key: 'slider-container',
+                            className: "flex items-center space-x-3"
+                        }, [
+                            React.createElement('input', {
+                                key: 'slider',
+                                type: 'range',
+                                min: param.min,
+                                max: param.max,
+                                step: param.step,
+                                value: params[key] ?? param.default,
+                                onChange: (e) => updateParam(key, Number(e.target.value)),
+                                className: "flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                            }),
+                            React.createElement('span', {
+                                key: 'value',
+                                className: "text-sm font-mono text-gray-600 w-12 text-right"
+                            }, (params[key] ?? param.default).toFixed(param.precision))
+                        ])
+                    ]);
+                });
+            }, [params, updateParam]);
+
+            // Helper functions using the generic renderParameterControls
+            const renderBudgetParameterControls = useCallback(() => {
+                return renderParameterControls(UmpConfig.getBudgetParams());
+            }, [renderParameterControls]);
+
+            const renderPreferenceParameterControls = useCallback(() => {
+                return renderParameterControls(UmpConfig.getPreferenceParams(selectedUtilityFunction));
+            }, [renderParameterControls, selectedUtilityFunction]);
+
+            // MathJax rendering effect (separate from equation display)
+            useEffect(() => {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise().catch((err) => console.log('MathJax typeset failed:', err));
+                }
+            }, [selectedUtilityFunction]);
+
+            // Helper function to render budget constraint display
+            const renderBudgetConstraintDisplay = () => {
+                const px = (params.priceX ?? 2.0).toFixed(1);
+                const py = (params.priceY ?? 3.0).toFixed(1);
+                const income = (params.income ?? 120).toFixed(0);
+                
+                const generalFormLatex = `$P_x x + P_y y \\leq I$`;
+                const specificFormLatex = `Budget line: ${px}x + ${py}y = ${income}`;
+                
+                return React.createElement('div', {
+                    key: 'budget-constraint-equation',
+                    className: "text-center"
+                }, [
+                    React.createElement('div', {
+                        key: 'general-form',
+                        className: "mb-1"
+                    }, generalFormLatex),
+                    React.createElement('div', {
+                        key: 'specific-form',
+                        className: "text-sm text-red-600"
+                    }, specificFormLatex)
+                ]);
+            };
+
+            // Helper function to render equation display
+            const renderEquationDisplay = () => {
+                const utilityFuncs = UmpConfig.getUtilityFunctionNames();
+                const currentFunc = utilityFuncs.find(f => f.key === selectedUtilityFunction);
+                
+                if (!currentFunc) return '';
+                
+                let generalFormLatex = currentFunc.mathForm;
+                let currentValuesLatex = '';
+                
+                // Add specific form with actual parameter values
+                switch(selectedUtilityFunction) {
+                    case 'cobb-douglas':
+                        const A = (params.cd_A ?? 1).toFixed(1);
+                        const alpha = (params.cd_alpha ?? 0.6).toFixed(2);
+                        const beta = (params.cd_beta ?? 0.4).toFixed(2);
+                        currentValuesLatex = `U(x,y) = ${A}x<sup>${alpha}</sup>y<sup>${beta}</sup>`;
+                        break;
+                    case 'perfect-substitutes':
+                        const ps_a = (params.ps_a ?? 1).toFixed(1);
+                        const ps_b = (params.ps_b ?? 1).toFixed(1);
+                        currentValuesLatex = `U(x,y) = ${ps_a}x + ${ps_b}y`;
+                        break;
+                    case 'perfect-complements':
+                        const pc_A = (params.pc_A ?? 1).toFixed(1);
+                        const pc_a = (params.pc_a ?? 1).toFixed(1);
+                        const pc_b = (params.pc_b ?? 1).toFixed(1);
+                        currentValuesLatex = `U(x,y) = ${pc_A} min(${pc_a}x, ${pc_b}y)`;
+                        break;
+                    case 'ces':
+                        const ces_a = (params.ces_a ?? 0.5).toFixed(2);
+                        const ces_b = (1 - (params.ces_a ?? 0.5)).toFixed(2);
+                        const ces_rho = (params.ces_rho ?? 0.5).toFixed(2);
+                        currentValuesLatex = `U(x,y) = (${ces_a}x<sup>${ces_rho}</sup> + ${ces_b}y<sup>${ces_rho}</sup>)<sup>1/${ces_rho}</sup>`;
+                        break;
+                    case 'quasilinear':
+                        const ql_alpha = (params.ql_alpha ?? 0.5).toFixed(3);
+                        const ql_b = (params.ql_b ?? 0.15).toFixed(3);
+                        currentValuesLatex = `U(x,y) = x<sup>${ql_alpha}</sup> + ${ql_b}y`;
+                        break;
+                }
+                
+                const generalLatex = `$${generalFormLatex}$`;
+                const specificLatex = currentValuesLatex;
+
+                return React.createElement('div', {
+                    key: 'math-equation',
+                    className: "text-center"
+                }, [
+                    React.createElement('div', {
+                        key: 'general-form',
+                        className: "mb-1"
+                    }, generalLatex),
+                    React.createElement('div', {
+                        key: 'specific-form',
+                        className: "text-sm text-blue-600",
+                        dangerouslySetInnerHTML: { __html: specificLatex }
+                    })
+                ]);
+            };
+
+            // Draw main consumer choice visualization
+            useEffect(() => {
+                if (!mainCanvasRef.current || !optimizationAnalysis) return;
+                
+                const canvas = mainCanvasRef.current;
+                const { ctx, width, height } = CanvasUtils.initCanvas(canvas, 400, 320);
+                const margins = CanvasUtils.calculateMargins(width, height);
+                
+                const visualConfig = UmpConfig.getMainVisualizationConfig(selectedUtilityFunction);
+                const transform = CanvasUtils.createTransform(margins, width, height, visualConfig.maxX, visualConfig.maxY);
+                
+                // Draw coordinate system
+                const gridConfig = {
+                    xPoints: visualConfig.gridPoints.x,
+                    yPoints: visualConfig.gridPoints.y
+                };
+                
+                CanvasUtils.drawGrid(ctx, margins, width, height, transform, gridConfig);
+                CanvasUtils.drawAxes(ctx, margins, width, height, 'Good X', 'Good Y');
+                CanvasUtils.drawTicks(ctx, margins, width, height, transform, gridConfig);
+                
+                CanvasUtils.setupClipping(ctx, margins, width, height);
+                
+                // Helper function to draw indifference curves based on curve type
+                const drawIndifferenceCurve = (ctx, icData, transform, style) => {
+                    // Handle L-shaped curves first
+                    if (icData.curveType === 'L-shaped') {
+                        const { cornerX, cornerY, maxX, maxY } = icData.metadata;
+                        CanvasUtils.drawLShape(ctx, cornerX, cornerY, maxX, maxY, transform, style);
+                        return;
+                    }
+                    
+                    if (icData.points.length <= 1) return;
+                    
+                    if (icData.curveType === 'linear' && icData.points.length === 2) {
+                        // Use efficient line drawing for linear curves
+                        CanvasUtils.drawLine(ctx, 
+                            icData.points[0].x, icData.points[0].y, 
+                            icData.points[1].x, icData.points[1].y, 
+                            transform, style);
+                    } else {
+                        // Standard smooth curve drawing
+                        CanvasUtils.drawCurve(ctx, icData.points, transform, style);
+                    }
+                };
+
+                // Draw background indifference curves using dynamic levels
+                const dynamicUtilityLevels = UtilityMath.calculateDynamicUtilityLevels(
+                    selectedUtilityFunction, params, visualConfig.maxX, visualConfig.maxY, 
+                    visualConfig.backgroundCurvePoints
+                );
+                
+                dynamicUtilityLevels.forEach(level => {
+                    const icData = UtilityMath.generateIndifferenceCurve(
+                        selectedUtilityFunction, params, level, visualConfig.maxX, visualConfig.maxY
+                    );
+                    
+                    drawIndifferenceCurve(ctx, icData, transform, {
+                        color: '#93c5fd',
+                        lineWidth: 1
+                    });
+                });
+                
+                // Draw budget line
+                const budgetLine = UtilityMath.getBudgetLineEndpoints(params, visualConfig.maxX, visualConfig.maxY);
+                CanvasUtils.drawLine(ctx, 0, budgetLine.yIntercept, budgetLine.xIntercept, 0, transform, {
+                    color: '#dc2626',
+                    lineWidth: 3
+                });
+                
+                // Draw optimal indifference curve
+                const optimalIC = UtilityMath.generateIndifferenceCurve(
+                    selectedUtilityFunction, params, optimizationAnalysis.optimalBundle.utility, 
+                    visualConfig.maxX, visualConfig.maxY
+                );
+                
+                drawIndifferenceCurve(ctx, optimalIC, transform, {
+                    color: '#1e40af',
+                    lineWidth: 3
+                });
+                
+                CanvasUtils.restoreClipping(ctx);
+                
+                // Highlight optimal bundle
+                CanvasUtils.highlightPoint(ctx, optimizationAnalysis.optimalBundle.x, optimizationAnalysis.optimalBundle.y, transform, {
+                    outerColor: '#dc2626',
+                    innerColor: '#ffffff'
+                });
+                
+                // Add optimal bundle label with coordinates
+                const bundleLabel = `X*=${optimizationAnalysis.optimalBundle.x.toFixed(1)}, Y*=${optimizationAnalysis.optimalBundle.y.toFixed(1)}`;
+                CanvasUtils.addLabel(ctx, bundleLabel, optimizationAnalysis.optimalBundle.x, optimizationAnalysis.optimalBundle.y, transform, {
+                    color: '#dc2626',
+                    fontWeight: 'bold',
+                    offsetX: 15,
+                    offsetY: -15,
+                    fontSize: 14
+                });
+            }, [selectedUtilityFunction, params, optimizationAnalysis]);
+
+            // Draw demand curve visualization
+            useEffect(() => {
+                if (!demandCanvasRef.current || !optimizationAnalysis) return;
+                
+                const canvas = demandCanvasRef.current;
+                const { ctx, width, height } = CanvasUtils.initCanvas(canvas, 400, 280);
+                const margins = CanvasUtils.calculateMargins(width, height);
+                
+                const visualConfig = UmpConfig.getDemandVisualizationConfig(selectedUtilityFunction);
+                const transform = CanvasUtils.createTransform(margins, width, height, visualConfig.maxX, visualConfig.maxY);
+                
+                // Draw coordinate system
+                const gridConfig = {
+                    xPoints: visualConfig.gridPoints.x,
+                    yPoints: visualConfig.gridPoints.y
+                };
+                
+                CanvasUtils.drawGrid(ctx, margins, width, height, transform, gridConfig);
+                CanvasUtils.drawAxes(ctx, margins, width, height, 'Quantity of X', 'Price of X (Px)');
+                CanvasUtils.drawTicks(ctx, margins, width, height, transform, gridConfig);
+                
+                CanvasUtils.setupClipping(ctx, margins, width, height);
+                
+                // Generate demand curve data
+                const priceRange = CanvasUtils.createRange(0.001, visualConfig.maxY, 0.1);
+                const demandData = UtilityMath.generateWalrasianDemand(selectedUtilityFunction, params, priceRange);
+                
+                // Convert to canvas coordinate format
+                const demandPoints = demandData.map(point => ({
+                    x: point.quantityX,
+                    y: point.priceX
+                }));
+                
+                // Draw demand curve
+                if (demandPoints.length > 1) {
+                    CanvasUtils.drawCurve(ctx, demandPoints, transform, {
+                        color: '#1e40af',
+                        lineWidth: 2
+                    });
+                }
+                
+                CanvasUtils.restoreClipping(ctx);
+                
+                // Highlight current equilibrium point
+                const currentPoint = {
+                    x: optimizationAnalysis.optimalBundle.x,
+                    y: params.priceX
+                };
+                
+                CanvasUtils.highlightPoint(ctx, currentPoint.x, currentPoint.y, transform, {
+                    outerColor: '#dc2626',
+                    innerColor: '#ffffff'
+                });
+                
+                // Add equilibrium point label
+                const pointLabel = `X*=${currentPoint.x.toFixed(1)}, Px=${currentPoint.y.toFixed(1)}`;
+                CanvasUtils.addLabel(ctx, pointLabel, currentPoint.x, currentPoint.y, transform, {
+                    color: '#dc2626',
+                    fontWeight: 'bold',
+                    offsetX: 10,
+                    offsetY: -10,
+                    fontSize: 14
+                });
+            }, [selectedUtilityFunction, params, optimizationAnalysis]);
+
+            // Draw Engel curve visualization
+            useEffect(() => {
+                if (!engelCanvasRef.current || !optimizationAnalysis) return;
+                
+                const canvas = engelCanvasRef.current;
+                const { ctx, width, height } = CanvasUtils.initCanvas(canvas, 400, 280);
+                const margins = CanvasUtils.calculateMargins(width, height);
+                
+                const visualConfig = UmpConfig.getEngelVisualizationConfig(selectedUtilityFunction);
+                const transform = CanvasUtils.createTransform(margins, width, height, visualConfig.maxX, visualConfig.maxY);
+                
+                // Draw coordinate system
+                const gridConfig = {
+                    xPoints: visualConfig.gridPoints.x,
+                    yPoints: visualConfig.gridPoints.y
+                };
+                
+                CanvasUtils.drawGrid(ctx, margins, width, height, transform, gridConfig);
+                CanvasUtils.drawAxes(ctx, margins, width, height, 'Quantity of X', 'Income (I)');
+                CanvasUtils.drawTicks(ctx, margins, width, height, transform, gridConfig);
+                
+                CanvasUtils.setupClipping(ctx, margins, width, height);
+                
+                // Generate Engel curve data
+                const incomeRange = CanvasUtils.createRange(0.001, visualConfig.maxY, 5);
+                const engelData = UtilityMath.generateEngelCurve(selectedUtilityFunction, params, incomeRange);
+                
+                // Convert to canvas coordinate format
+                const engelPoints = engelData.map(point => ({
+                    x: point.quantityX,
+                    y: point.income
+                }));
+                
+                // Draw Engel curve
+                if (engelPoints.length > 1) {
+                    CanvasUtils.drawCurve(ctx, engelPoints, transform, {
+                        color: '#059669',
+                        lineWidth: 2
+                    });
+                }
+                
+                CanvasUtils.restoreClipping(ctx);
+                
+                // Highlight current income/consumption point
+                const currentPoint = {
+                    x: optimizationAnalysis.optimalBundle.x,
+                    y: params.income
+                };
+                
+                CanvasUtils.highlightPoint(ctx, currentPoint.x, currentPoint.y, transform, {
+                    outerColor: '#dc2626',
+                    innerColor: '#ffffff'
+                });
+                
+                // Add current point label
+                const pointLabel = `X*=${currentPoint.x.toFixed(1)}, I=${currentPoint.y.toFixed(0)}`;
+                CanvasUtils.addLabel(ctx, pointLabel, currentPoint.x, currentPoint.y, transform, {
+                    color: '#dc2626',
+                    fontWeight: 'bold',
+                    offsetX: 10,
+                    offsetY: 10,
+                    fontSize: 14
+                });
+            }, [selectedUtilityFunction, params, optimizationAnalysis]);
+
+            return React.createElement('div', {
+                className: "min-h-screen p-6"
+            }, [
+                // Header
+                React.createElement('div', {
+                    key: 'header',
+                    className: "text-center mb-4"
+                }, [
+                    React.createElement('h1', {
+                        key: 'title',
+                        className: "text-3xl font-bold text-gray-800 mb-2"
+                    }, 'Utility Maximization Problem (UMP)')
+                ]),
+
+                // Main content grid
+                React.createElement('div', {
+                    key: 'content',
+                    className: "grid grid-cols-1 lg:grid-cols-3 gap-3 max-w-7xl mx-auto"
+                }, [
+                    // Left column: Parameter controls
+                    React.createElement('div', {
+                        key: 'controls',
+                        className: "space-y-3"
+                    }, [
+                        // Utility Function Selector
+                        React.createElement('div', {
+                            key: 'utility-selector',
+                            className: "bg-white p-4 rounded-lg shadow-sm border"
+                        }, [
+                            React.createElement('h3', {
+                                key: 'selector-title',
+                                className: "text-lg font-semibold text-gray-700 mb-4"
+                            }, 'Utility Function'),
+                            React.createElement('select', {
+                                key: 'utility-dropdown',
+                                value: selectedUtilityFunction,
+                                onChange: (e) => setSelectedUtilityFunction(e.target.value),
+                                className: "w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            }, 
+                                UmpConfig.getUtilityFunctionNames().map(utilityFunc => 
+                                    React.createElement('option', {
+                                        key: utilityFunc.key + '-option',
+                                        value: utilityFunc.key
+                                    }, utilityFunc.name)
+                                )
+                            )
+                        ]),
+
+                        // Budget Parameters panel
+                        React.createElement('div', {
+                            key: 'budget-parameters',
+                            className: "bg-white p-4 rounded-lg shadow-sm border"
+                        }, [
+                            React.createElement('div', {
+                                key: 'budget-param-header',
+                                className: "flex justify-between items-center mb-4"
+                            }, [
+                                React.createElement('h3', {
+                                    key: 'budget-param-title',
+                                    className: "text-lg font-semibold text-gray-700"
+                                }, 'Budget Constraint Parameters'),
+                                React.createElement('button', {
+                                    key: 'reset-budget-button',
+                                    onClick: resetBudgetParams,
+                                    className: "text-sm px-2 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors"
+                                }, 'Reset')
+                            ]),
+                            React.createElement('div', {
+                                key: 'budget-constraint-display',
+                                className: "text-center mb-4 p-2 bg-gray-50 rounded"
+                            }, renderBudgetConstraintDisplay()),
+                            React.createElement('div', {
+                                key: 'budget-param-controls',
+                                className: "space-y-3"
+                            }, renderBudgetParameterControls())
+                        ]),
+
+                        // Preference Parameters panel
+                        React.createElement('div', {
+                            key: 'preference-parameters',
+                            className: "bg-white p-4 rounded-lg shadow-sm border"
+                        }, [
+                            React.createElement('div', {
+                                key: 'pref-param-header',
+                                className: "flex justify-between items-center mb-4"
+                            }, [
+                                React.createElement('h3', {
+                                    key: 'pref-param-title',
+                                    className: "text-lg font-semibold text-gray-700"
+                                }, 'Preference Parameters'),
+                                React.createElement('button', {
+                                    key: 'reset-pref-button',
+                                    onClick: resetPreferenceParams,
+                                    className: "text-sm px-2 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors"
+                                }, 'Reset')
+                            ]),
+                            React.createElement('div', {
+                                key: 'equation-display',
+                                className: "text-center mb-4 p-2 bg-gray-50 rounded"
+                            }, renderEquationDisplay()),
+                            React.createElement('div', {
+                                key: 'pref-param-controls',
+                                className: "space-y-3"
+                            }, renderPreferenceParameterControls())
+                        ])
+                    ]),
+
+                    // Center column: Main visualization and results
+                    React.createElement('div', {
+                        key: 'center-container',
+                        className: "space-y-3"
+                    }, [
+                        // Main consumer choice visualization
+                        React.createElement('div', {
+                            key: 'main-viz',
+                            className: "bg-white p-4 rounded-lg shadow-sm border"
+                        }, [
+                            React.createElement('h3', {
+                                key: 'main-title',
+                                className: "text-lg font-semibold text-gray-700 mb-4"
+                            }, 'Consumer Choice Visualization'),
+                            React.createElement('canvas', {
+                                key: 'main-canvas',
+                                ref: mainCanvasRef,
+                                width: 600,
+                                height: 480
+                            }),
+                            // Legend below canvas
+                            React.createElement('div', {
+                                key: 'legend',
+                                className: "flex flex-wrap gap-4 mt-3 text-xs text-gray-600"
+                            }, [
+                                React.createElement('div', {
+                                    key: 'budget-line-legend',
+                                    className: "flex items-center gap-2"
+                                }, [
+                                    React.createElement('div', {
+                                        key: 'budget-line-color',
+                                        className: "w-4 h-0.5 bg-red-600"
+                                    }),
+                                    React.createElement('span', {
+                                        key: 'budget-line-label'
+                                    }, 'Budget Line')
+                                ]),
+                                React.createElement('div', {
+                                    key: 'optimal-ic-legend',
+                                    className: "flex items-center gap-2"
+                                }, [
+                                    React.createElement('div', {
+                                        key: 'optimal-ic-color',
+                                        className: "w-4 h-0.5 bg-blue-800"
+                                    }),
+                                    React.createElement('span', {
+                                        key: 'optimal-ic-label'
+                                    }, 'Optimal Indifference Curve')
+                                ]),
+                                React.createElement('div', {
+                                    key: 'indiff-curves-legend',
+                                    className: "flex items-center gap-2"
+                                }, [
+                                    React.createElement('div', {
+                                        key: 'indiff-curves-color',
+                                        className: "w-4 h-0.5 bg-blue-300"
+                                    }),
+                                    React.createElement('span', {
+                                        key: 'indiff-curves-label'
+                                    }, 'Background Indifference Curves')
+                                ]),
+                                React.createElement('div', {
+                                    key: 'optimal-bundle-legend',
+                                    className: "flex items-center gap-2"
+                                }, [
+                                    React.createElement('div', {
+                                        key: 'optimal-bundle-color',
+                                        className: "w-2 h-2 bg-red-600 rounded-full"
+                                    }),
+                                    React.createElement('span', {
+                                        key: 'optimal-bundle-label'
+                                    }, 'Optimal Bundle')
+                                ])
+                            ])
+                        ]),
+
+                        // Results Summary
+                        React.createElement('div', {
+                            key: 'results-summary',
+                            className: "bg-white p-4 rounded-lg shadow-sm border"
+                        }, [
+                            React.createElement('h3', {
+                                key: 'results-title',
+                                className: "text-lg font-semibold text-gray-700 mb-4"
+                            }, 'Optimization Results'),
+                            
+                            // Utility Maximization Problem Statement
+                            React.createElement('div', {
+                                key: 'ump-problem-statement',
+                                className: "bg-gray-50 p-4 rounded-lg border mb-4"
+                            }, [
+                                React.createElement('div', {
+                                    key: 'ump-content',
+                                    className: "space-y-3 text-sm text-gray-700"
+                                }, [
+                                    React.createElement('div', { key: 'ump-explanation' }, [
+                                        React.createElement('strong', { key: 'ump-title' }, 'Utility Maximization Problem:'),
+                                        React.createElement('div', { 
+                                            key: 'ump-math',
+                                            className: "my-2"
+                                        }, `Maximize utility $U(x,y)$ subject to budget constraint $P_x x + P_y y \\leq I$`)
+                                    ])
+                                ])
+                            ]),
+                            
+                            optimizationAnalysis ? React.createElement('div', {
+                                key: 'results-content',
+                                className: "grid grid-cols-2 gap-4 text-sm"
+                            }, [
+                                React.createElement('div', {
+                                    key: 'optimal-bundle',
+                                    className: "space-y-2"
+                                }, [
+                                    React.createElement('h4', {
+                                        key: 'bundle-title',
+                                        className: "font-bold text-gray-600"
+                                    }, 'Optimal Bundle'),
+                                    React.createElement('div', { key: 'x-value' }, `X* = ${optimizationAnalysis.optimalBundle.x.toFixed(2)}, Y* = ${optimizationAnalysis.optimalBundle.y.toFixed(2)}`),
+                                    React.createElement('div', { key: 'utility-value' }, `Max. Utility = ${optimizationAnalysis.optimalBundle.utility.toFixed(2)}`),
+                                    React.createElement('div', { key: 'budget-shares' }, [
+                                        React.createElement('div', { key: 'share-x' }, `X income share: ${(optimizationAnalysis.budgetShares.x * 100).toFixed(1)}%`),
+                                        React.createElement('div', { key: 'share-y' }, `Y income share: ${(optimizationAnalysis.budgetShares.y * 100).toFixed(1)}%`)
+                                    ])
+                                ]),
+                                
+                                React.createElement('div', {
+                                    key: 'equilibrium-conditions',
+                                    className: "space-y-2"
+                                }, [
+                                    React.createElement('h4', {
+                                        key: 'conditions-title',
+                                        className: "font-bold text-gray-600"
+                                    }, 'Tangency Condition'),
+                                    React.createElement('div', { key: 'mrs-value' }, `|MRS| = ${optimizationAnalysis.mrs.toFixed(3)}`),
+                                    React.createElement('div', { key: 'price-ratio-value' }, `Px/Py = ${optimizationAnalysis.priceRatio.toFixed(3)}`),
+                                    React.createElement('div', { 
+                                        key: 'tangency-check',
+                                        className: optimizationAnalysis.tangencyConditionSatisfied ? "text-green-600 font-semibold" : "text-red-600"
+                                    }, optimizationAnalysis.tangencyConditionSatisfied ? '✓ Interior solution' : '⚠ Corner Solution')
+                                ])
+                            ]) : React.createElement('div', {
+                                key: 'loading',
+                                className: "text-gray-500"
+                            }, 'Loading optimization results...')
+                        ])
+                    ]),
+
+                    // Right column: Supporting visualizations (placeholder for Phase 2)
+                    React.createElement('div', {
+                        key: 'supporting-viz',
+                        className: "space-y-3"
+                    }, [
+                        React.createElement('div', {
+                            key: 'demand-curve-viz',
+                            className: "bg-white p-4 rounded-lg shadow-sm border"
+                        }, [
+                            React.createElement('h3', {
+                                key: 'demand-title',
+                                className: "text-lg font-semibold text-gray-700 mb-4"
+                            }, 'Demand Curve: Good X'),
+                            React.createElement('canvas', {
+                                key: 'demand-canvas',
+                                ref: demandCanvasRef,
+                                width: 400,
+                                height: 320
+                            })
+                        ]),
+                        
+                        React.createElement('div', {
+                            key: 'engel-curve-viz',
+                            className: "bg-white p-4 rounded-lg shadow-sm border"
+                        }, [
+                            React.createElement('h3', {
+                                key: 'engel-title',
+                                className: "text-lg font-semibold text-gray-700 mb-4"
+                            }, 'Engel Curve: Good X'),
+                            React.createElement('canvas', {
+                                key: 'engel-canvas',
+                                ref: engelCanvasRef,
+                                width: 400,
+                                height: 320
+                            })
+                        ])
+                    ])
+                ]),
+
+                // Educational Content Section - Understanding Consumer Choice
+                React.createElement('div', {
+                    key: 'educational-notes',
+                    className: "bg-white p-6 rounded-lg shadow-sm border max-w-7xl mx-auto mt-6"
+                }, [
+                    React.createElement('h3', {
+                        key: 'education-title',
+                        className: "text-xl font-semibold text-gray-800 mb-4"
+                    }, 'Understanding Consumer Choice'),
+                    
+                    React.createElement('div', {
+                        key: 'education-grid',
+                        className: "grid grid-cols-1 md:grid-cols-3 gap-6 text-sm"
+                    }, [
+                        React.createElement('div', { key: 'budget-explanation' }, [
+                            React.createElement('h4', {
+                                key: 'budget-exp-title',
+                                className: "font-semibold text-gray-700 mb-3 text-base"
+                            }, 'Budget Constraint'),
+                            React.createElement('ul', {
+                                key: 'budget-list',
+                                className: "text-gray-600 space-y-1"
+                            }, [
+                                React.createElement('li', { key: 'budget-1' }, '• Red line shows all affordable combinations'),
+                                React.createElement('li', { key: 'budget-2' }, '• Slope = -Px/Py (opportunity cost)'),
+                                React.createElement('li', { key: 'budget-3' }, '• Higher income shifts line outward'),
+                                React.createElement('li', { key: 'budget-4' }, '• Price changes rotate the line')
+                            ])
+                        ]),
+                        React.createElement('div', { key: 'indifference-explanation' }, [
+                            React.createElement('h4', {
+                                key: 'ic-exp-title',
+                                className: "font-semibold text-gray-700 mb-3 text-base"
+                            }, 'Indifference Curves'),
+                            React.createElement('ul', {
+                                key: 'ic-list',
+                                className: "text-gray-600 space-y-1"
+                            }, [
+                                React.createElement('li', { key: 'ic-1' }, '• Dark blue indifference curve shows maximum attainable utility'),
+                                React.createElement('li', { key: 'ic-2' }, '• Slope = MRS (marginal rate of substitution)'),
+                                React.createElement('li', { key: 'ic-3' }, '• Convex curves show diminishing MRS'),
+                                React.createElement('li', { key: 'ic-4' }, '• Higher curves = higher utility levels')
+                            ])
+                        ]),
+                        React.createElement('div', { key: 'optimization-explanation' }, [
+                            React.createElement('h4', {
+                                key: 'opt-exp-title',
+                                className: "font-semibold text-gray-700 mb-3 text-base"
+                            }, 'Optimization'),
+                            React.createElement('ul', {
+                                key: 'opt-list',
+                                className: "text-gray-600 space-y-1"
+                            }, [
+                                React.createElement('li', { key: 'opt-1' }, '• Consumer maximizes utility subject to budget'),
+                                React.createElement('li', { key: 'opt-2' }, '• Optimal bundle typically where IC is tangent to budget line'),
+                                React.createElement('li', { key: 'opt-3' }, '• |MRS| = Px/Py at interior optimum'),
+                                React.createElement('li', { key: 'opt-4' }, '• Corner solutions occur with e.g. perfect substitutes')
+                            ])
+                        ])
+                    ])
+                ]),
+
+                // Try These Experiments Section
+                React.createElement('div', {
+                    key: 'comparative-statics',
+                    className: "bg-white p-6 rounded-lg shadow-sm border max-w-7xl mx-auto mt-4"
+                }, [
+                    React.createElement('h3', {
+                        key: 'comp-title',
+                        className: "text-xl font-semibold text-gray-800 mb-4"
+                    }, 'Try These Experiments'),
+                    
+                    React.createElement('div', {
+                        key: 'experiments',
+                        className: "grid grid-cols-1 md:grid-cols-2 gap-6 text-sm"
+                    }, [
+                        React.createElement('div', { key: 'experiment-1' }, [
+                            React.createElement('h4', {
+                                key: 'exp1-title',
+                                className: "font-semibold text-blue-700 mb-3 text-base"
+                            }, '💰 Income Effects'),
+                            React.createElement('ul', {
+                                key: 'exp1-list',
+                                className: "text-gray-600 space-y-1"
+                            }, [
+                                React.createElement('li', { key: 'exp1-1' }, '• Double the income - see budget line shift outward'),
+                                React.createElement('li', { key: 'exp1-2' }, '• With Cobb-Douglas: both goods increase proportionally'),
+                                React.createElement('li', { key: 'exp1-3' }, '• With Quasilinear: only Y consumption changes significantly'),
+                                React.createElement('li', { key: 'exp1-4' }, '• Budget shares stay constant for Cobb-Douglas'),
+                                React.createElement('li', { key: 'exp1-5' }, '• Perfect complements: both goods increase together'),
+                                React.createElement('li', { key: 'exp1-6' }, '• Engel curve tracks how optimal X responds to income changes')
+                            ])
+                        ]),
+                        React.createElement('div', { key: 'experiment-2' }, [
+                            React.createElement('h4', {
+                                key: 'exp2-title',
+                                className: "font-semibold text-green-700 mb-3 text-base"
+                            }, '📊 Price Effects'),
+                            React.createElement('ul', {
+                                key: 'exp2-list',
+                                className: "text-gray-600 space-y-1"
+                            }, [
+                                React.createElement('li', { key: 'exp2-1' }, '• Increase Px: budget line rotates inward at X-axis'),
+                                React.createElement('li', { key: 'exp2-2' }, '• See substitution toward relatively cheaper good Y'),
+                                React.createElement('li', { key: 'exp2-3' }, '• Perfect substitutes: dramatic shifts to corner solutions'),
+                                React.createElement('li', { key: 'exp2-4' }, '• Perfect complements: proportional reduction in both'),
+                                React.createElement('li', { key: 'exp2-5' }, '• CES utility: substitution depends on σ parameter'),
+                                React.createElement('li', { key: 'exp2-6' }, '• Demand curve tracks how optimal X responds to own price changes')
+                            ])
+                        ])
+                    ])
+                ])
+            ]);
+        };
+
+        // Initialize app after all scripts are loaded
+        const initializeApp = () => {
+            console.log('Checking for required modules...');
+            console.log('UmpConfig:', !!window.UmpConfig);
+            console.log('UtilityMath:', !!window.UtilityMath);
+            console.log('CanvasUtils:', !!window.CanvasUtils);
+            
+            if (window.UmpConfig && window.UtilityMath && window.CanvasUtils) {
+                console.log('All modules loaded, initializing React app...');
+                try {
+                    const root = ReactDOM.createRoot(document.getElementById('root'));
+                    root.render(React.createElement(UmpVisualization));
+                    console.log('React app rendered successfully!');
+                } catch (error) {
+                    console.error('Error rendering React app:', error);
+                }
+            } else {
+                console.log('Waiting for modules to load...');
+                setTimeout(initializeApp, 100);
+            }
+        };
+
+        // Start initialization
+        initializeApp();
+    </script>
+</body>
+</html>

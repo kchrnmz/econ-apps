@@ -1,0 +1,2487 @@
+<!DOCTYPE html>
+<!--
+Utility Function Interactive Visualization
+Copyright (c) 2025 Kirill Chernomaz (San Francisco State University) | MIT License
+Built with Claude Code
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Utility Function Analysis - Interactive Visualization</title>
+    <!-- Embedded JavaScript Modules -->
+    <script>
+        // Embedded Module: utilConfig.js
+        // Configuration for Utility Function Interactive Visualization App
+        // Contains parameter definitions, defaults, and visualization settings
+        
+        const UtilConfig = {
+        
+          // Analysis modes for right panel 2D visualizations
+          analysisModes: {
+            'indifference-map': {
+              name: 'Indifference Curve Map',
+              buttonLabel: 'Fixed Utility',
+              topView: {
+                name: 'Indifference Curves'
+              },
+              slicingPlane: 'horizontal'
+            },
+            'x-section': {
+              name: 'Utility vs Good X',
+              buttonLabel: 'Fixed Good Y',
+              topView: {
+                name: 'U(x) at fixed Y'
+              },
+              slicingPlane: 'vertical-Y'
+            },
+            'y-section': {
+              name: 'Utility vs Good Y',
+              buttonLabel: 'Fixed Good X',
+              topView: {
+                name: 'U(y) at fixed X'
+              },
+              slicingPlane: 'vertical-X'
+            }
+          },
+        
+          // Analysis control parameters (for slicing planes and 2D views)
+          analysisParams: {
+            utilityLevel: { min: 1, max: 10, step: 0.5, default: 5, precision: 1, label: 'Utility Level (U)' },
+            goodXLevel: { min: 0.5, max: 10, step: 0.5, default: 3, precision: 1, label: 'Good X Level' },
+            goodYLevel: { min: 0.5, max: 10, step: 0.5, default: 3, precision: 1, label: 'Good Y Level' }
+          },
+        
+          // Utility function configurations
+          utilityFunctions: {
+            'cobb-douglas': {
+              name: 'Cobb-Douglas',
+              mathForm: 'U(x,y) = Ax^{\\alpha}y^{\\beta}',
+              description: 'Smooth indifference curves with diminishing MRS',
+        
+              config: {
+                // Utility function parameters
+                params: {
+                  cd_A: { min: 0.5, max: 3.0, step: 0.1, default: 1.0, precision: 1, label: 'A (scale)' },
+                  cd_alpha: { min: 0.1, max: 0.9, step: 0.05, default: 0.5, precision: 2, label: 'α (X importance)' },
+                  cd_beta: { min: 0.1, max: 0.9, step: 0.05, default: 0.5, precision: 2, label: 'β (Y importance)' }
+                },
+        
+                // 3D visualization bounds (utility surface)
+                surface3D: {
+                  maxX: 10, maxY: 10, maxU: 9,
+                  resolution: 40,
+                  meshColor: 0x4f46e5,    // Indigo blue
+                  wireframeColor: 0x6366f1
+                },
+        
+                // Indifference curve map visualization
+                icView: {
+                  maxX: 10, maxY: 10,
+                  backgroundLevels: [2, 4, 6, 8, 10],
+                  gridPoints: { x: [2, 4, 6, 8, 10], y: [2, 4, 6, 8, 10] }
+                },
+        
+                // Cross-section visualization
+                crossSectionView: {
+                  maxInput: 10, maxUtility: 12,
+                  gridPoints: { x: [2, 4, 6, 8, 10], y: [2, 4, 6, 8, 10, 12] }
+                }
+              }
+            },
+        
+            'perfect-substitutes': {
+              name: 'Perfect Substitutes',
+              mathForm: 'U(x,y) = ax + by',
+              description: 'Linear indifference curves with constant MRS',
+        
+              config: {
+                params: {
+                  ps_a: { min: 0.1, max: 2.0, step: 0.1, default: 0.5, precision: 1, label: 'a (marginal utility of X)' },
+                  ps_b: { min: 0.1, max: 2.0, step: 0.1, default: 0.5, precision: 1, label: 'b (marginal utility of Y)' }
+                },
+        
+                surface3D: {
+                  maxX: 10, maxY: 10, maxU: 25,
+                  resolution: 40,
+                  meshColor: 0xdc2626,    // Red
+                  wireframeColor: 0xef4444
+                },
+        
+                icView: {
+                  maxX: 10, maxY: 10,
+                  backgroundLevels: [5, 10, 15, 20],
+                  gridPoints: { x: [2, 4, 6, 8, 10], y: [2, 4, 6, 8, 10] }
+                },
+        
+                crossSectionView: {
+                  maxInput: 10, maxUtility: 25,
+                  gridPoints: { x: [2, 4, 6, 8, 10], y: [5, 10, 15, 20, 25] }
+                }
+              }
+            },
+        
+            'perfect-complements': {
+              name: 'Perfect Complements',
+              mathForm: 'U(x,y) = A \\cdot \\min\\{ax, by\\}',
+              description: 'L-shaped indifference curves, no substitution possible',
+        
+              config: {
+                params: {
+                  pc_A: { min: 0.5, max: 2.5, step: 0.1, default: 1.0, precision: 1, label: 'A (scale)' },
+                  pc_a: { min: 0.1, max: 2.0, step: 0.1, default: 1.0, precision: 1, label: 'a (X requirement)' },
+                  pc_b: { min: 0.1, max: 2.0, step: 0.1, default: 1.0, precision: 1, label: 'b (Y requirement)' }
+                },
+        
+                surface3D: {
+                  maxX: 10, maxY: 10, maxU: 12,
+                  resolution: 40,
+                  meshColor: 0x7c3aed,    // Purple
+                  wireframeColor: 0x8b5cf6
+                },
+        
+                icView: {
+                  maxX: 10, maxY: 10,
+                  backgroundLevels: [2, 4, 6, 8, 10],
+                  gridPoints: { x: [2, 4, 6, 8, 10], y: [2, 4, 6, 8, 10] }
+                },
+        
+                crossSectionView: {
+                  maxInput: 10, maxUtility: 12,
+                  gridPoints: { x: [2, 4, 6, 8, 10], y: [2, 4, 6, 8, 10, 12] }
+                }
+              }
+            },
+        
+            'ces': {
+              name: 'CES (Constant Elasticity of Substitution)',
+              mathForm: 'U(x,y) = (ax^{\\rho} + (1-a)y^{\\rho})^{1/\\rho}',
+              description: 'Variable substitution elasticity between perfect substitutes and complements',
+        
+              config: {
+                params: {
+                  ces_a: { min: 0.05, max: 0.95, step: 0.05, default: 0.5, precision: 2, label: 'a (weight on X)' },
+                  ces_rho: { min: -10.0, max: 0.95, step: 0.1, default: -0.5, precision: 1, label: 'ρ (substitutability)' }
+                },
+        
+                surface3D: {
+                  maxX: 10, maxY: 10, maxU: 15,
+                  resolution: 40,
+                  meshColor: 0x059669,    // Emerald green
+                  wireframeColor: 0x10b981
+                },
+        
+                icView: {
+                  maxX: 10, maxY: 10,
+                  backgroundLevels: [2, 4, 6, 8, 10, 12],
+                  gridPoints: { x: [2, 4, 6, 8, 10], y: [2, 4, 6, 8, 10] }
+                },
+        
+                crossSectionView: {
+                  maxInput: 10, maxUtility: 15,
+                  gridPoints: { x: [2, 4, 6, 8, 10], y: [3, 6, 9, 12, 15] }
+                }
+              }
+            },
+        
+            'quasilinear': {
+              name: 'Quasilinear',
+              mathForm: 'U(x,y) = x^{\\alpha} + by',
+              description: 'Parallel indifference curves, linear in one good',
+        
+              config: {
+                params: {
+                  ql_alpha: { min: 0.05, max: 1.0, step: 0.05, default: 0.5, precision: 2, label: 'α (concavity)' },
+                  ql_b: { min: 0.01, max: 2.0, step: 0.1, default: 1.0, precision: 1, label: 'b (marginal utility of Y)' }
+                },
+        
+                surface3D: {
+                  maxX: 10, maxY: 10, maxU: 15,
+                  resolution: 40,
+                  meshColor: 0xf59e0b,    // Amber
+                  wireframeColor: 0xfbbf24
+                },
+        
+                icView: {
+                  maxX: 10, maxY: 10,
+                  backgroundLevels: [2, 4, 6, 8, 10, 12],
+                  gridPoints: { x: [2, 4, 6, 8, 10], y: [2, 4, 6, 8, 10] }
+                },
+        
+                crossSectionView: {
+                  maxInput: 10, maxUtility: 15,
+                  gridPoints: { x: [2, 4, 6, 8, 10], y: [3, 6, 9, 12, 15] }
+                }
+              }
+            }
+          },
+        
+          // Default settings
+          defaults: {
+            selectedFunction: 'cobb-douglas',
+            selectedAnalysis: 'indifference-map',
+            showWireframe: true,
+            showSlicingPlanes: true
+          },
+        
+          // 3D Scene settings
+          scene3D: {
+            camera: {
+              position: { x: -7, y: 8, z: -3 },
+              target: { x: 5, y: 5, z: 5 }
+            },
+            lighting: {
+              ambient: { color: 0x404040, intensity: 0.6 },
+              directional: { color: 0xffffff, intensity: 0.8, position: { x: -50, y: 50, z: -50 } }
+            },
+            controls: {
+              enableDamping: true,
+              dampingFactor: 0.1,
+              enableZoom: true,
+              enableRotate: true,
+              enablePan: true
+            }
+          },
+        
+          // UI layout settings
+          layout: {
+            canvas3D: { width: 400, height: 320 },
+            canvas2D: { width: 400, height: 300 },
+            analysisCanvas: {
+              topCanvas: { width: 400, height: 280 }
+            },
+            responsiveBreakpoints: {
+              mobile: 768,
+              tablet: 1024,
+              desktop: 1200
+            }
+          },
+        
+          // Slicing plane configuration
+          slicingPlanes: {
+            horizontal: {
+              color: 0xffeb3b,     // Yellow for utility level planes
+              opacity: 0.4,
+              size: { width: 40, height: 40 }
+            },
+            'vertical-Y': {
+              color: 0x4caf50,     // Green for fixed-Y planes
+              opacity: 0.4,
+              size: { width: 40, height: 60 }
+            },
+            'vertical-X': {
+              color: 0x2196f3,     // Blue for fixed-X planes
+              opacity: 0.4,
+              size: { width: 40, height: 60 }
+            }
+          },
+        
+          // Helper functions
+          getAllDefaults: () => {
+            const allDefaults = {};
+        
+            // Add analysis parameters
+            Object.entries(UtilConfig.analysisParams).forEach(([param, settings]) => {
+              allDefaults[param] = settings.default;
+            });
+        
+            // Add preference parameters for each utility function
+            Object.keys(UtilConfig.utilityFunctions).forEach(funcType => {
+              Object.assign(allDefaults, UtilConfig.getUtilityDefaults(funcType));
+            });
+        
+            return allDefaults;
+          },
+        
+          getUtilityDefaults: (utilityType) => {
+            const func = UtilConfig.utilityFunctions[utilityType];
+            if (!func) return {};
+        
+            const defaults = {};
+            Object.entries(func.config.params || {}).forEach(([param, settings]) => {
+              if (settings.default !== undefined) {
+                defaults[param] = settings.default;
+              }
+            });
+            return defaults;
+          },
+        
+          getUtilityParams: (utilityType) => {
+            const func = UtilConfig.utilityFunctions[utilityType];
+            return func?.config?.params || {};
+          },
+        
+          getAnalysisParams: () => {
+            return UtilConfig.analysisParams || {};
+          },
+        
+          getSurface3DConfig: (utilityType) => {
+            const func = UtilConfig.utilityFunctions[utilityType];
+            return func?.config?.surface3D || {};
+          },
+        
+          getICViewConfig: (utilityType) => {
+            const func = UtilConfig.utilityFunctions[utilityType];
+            return func?.config?.icView || {};
+          },
+        
+          getCrossSectionConfig: (utilityType) => {
+            const func = UtilConfig.utilityFunctions[utilityType];
+            return func?.config?.crossSectionView || {};
+          }
+        };
+        
+        // Make available globally for browser
+        if (typeof window !== 'undefined') {
+          window.UtilConfig = UtilConfig;
+        }
+        
+    </script>
+    <script>
+        // Embedded Module: utilityMath.js
+        // Utility Mathematics for Utility Function Interactive Visualization App
+        // Contains all mathematical functions for utility theory analysis
+        
+        const UtilityMath = {
+        
+          // Utility function definitions with pure mathematical operations
+          utilityFunctions: {
+            'cobb-douglas': {
+              // Utility function: U(x,y) = Ax^α y^β
+              utility: (x, y, config) => {
+                const { cd_A, cd_alpha, cd_beta } = config;
+                const safeX = Math.max(0.001, x);
+                const safeY = Math.max(0.001, y);
+                return cd_A * Math.pow(safeX, cd_alpha) * Math.pow(safeY, cd_beta);
+              },
+        
+              // Marginal utility of X: MUx = ∂U/∂x = αAx^(α-1)y^β
+              marginalX: (x, y, config) => {
+                const { cd_A, cd_alpha, cd_beta } = config;
+                const safeX = Math.max(0.001, x);
+                const safeY = Math.max(0.001, y);
+                return cd_A * cd_alpha * Math.pow(safeX, cd_alpha - 1) * Math.pow(safeY, cd_beta);
+              },
+        
+              // Marginal utility of Y: MUy = ∂U/∂y = βAx^α y^(β-1)
+              marginalY: (x, y, config) => {
+                const { cd_A, cd_alpha, cd_beta } = config;
+                const safeX = Math.max(0.001, x);
+                const safeY = Math.max(0.001, y);
+                return cd_A * cd_beta * Math.pow(safeX, cd_alpha) * Math.pow(safeY, cd_beta - 1);
+              },
+        
+              // Marginal rate of substitution: MRS = MUx/MUy = (α/β)(y/x)
+              mrs: (x, y, config) => {
+                const { cd_alpha, cd_beta } = config;
+                const safeX = Math.max(0.001, x);
+                return (cd_alpha / cd_beta) * (y / safeX);
+              },
+        
+              // Generate indifference curve points
+              generateIndifferenceCurve: (targetUtility, maxX, maxY, config, numPoints = 100) => {
+                const { cd_A, cd_alpha, cd_beta } = config;
+                const points = [];
+        
+                for (let i = 0; i <= numPoints; i++) {
+                  const x = (i / numPoints) * maxX;
+                  if (x <= 0.001) continue;
+        
+                  try {
+                    const y = Math.pow(targetUtility / (cd_A * Math.pow(x, cd_alpha)), 1 / cd_beta);
+                    if (y > 0 && isFinite(y)) {
+                      points.push({ x, y });
+                    }
+                  } catch (e) {
+                    // Skip invalid points
+                  }
+                }
+        
+                return {
+                  points: points,
+                  curveType: 'smooth',
+                  metadata: {
+                    utilityLevel: targetUtility,
+                    description: `Cobb-Douglas IC: U=${targetUtility.toFixed(2)}`
+                  }
+                };
+              }
+            },
+        
+            'perfect-substitutes': {
+              // Utility function: U(x,y) = ax + by
+              utility: (x, y, config) => {
+                const { ps_a, ps_b } = config;
+                return ps_a * Math.max(0, x) + ps_b * Math.max(0, y);
+              },
+        
+              // Marginal utility of X: MUx = a (constant)
+              marginalX: (x, y, config) => {
+                const { ps_a } = config;
+                return ps_a;
+              },
+        
+              // Marginal utility of Y: MUy = b (constant)
+              marginalY: (x, y, config) => {
+                const { ps_b } = config;
+                return ps_b;
+              },
+        
+              // MRS = a/b (constant)
+              mrs: (x, y, config) => {
+                const { ps_a, ps_b } = config;
+                return ps_a / ps_b;
+              },
+        
+              // Generate indifference curve (linear)
+              generateIndifferenceCurve: (targetUtility, maxX, maxY, config, numPoints = 100) => {
+                const { ps_a, ps_b } = config;
+                const points = [];
+        
+                // Linear IC: ax + by = U → y = (U - ax)/b
+                const yIntercept = targetUtility / ps_b;
+                const xIntercept = targetUtility / ps_a;
+        
+                if (yIntercept > 0) {
+                  points.push({ x: 0, y: yIntercept });
+                }
+        
+                // Add intermediate points
+                for (let i = 1; i < numPoints; i++) {
+                  const x = (i / numPoints) * xIntercept;
+                  const y = (targetUtility - ps_a * x) / ps_b;
+                  if (y >= 0) {
+                    points.push({ x, y });
+                  }
+                }
+        
+                if (xIntercept > 0) {
+                  points.push({ x: xIntercept, y: 0 });
+                }
+        
+                return {
+                  points: points,
+                  curveType: 'linear',
+                  metadata: {
+                    utilityLevel: targetUtility,
+                    description: `Perfect Substitutes IC: U=${targetUtility.toFixed(2)}`
+                  }
+                };
+              }
+            },
+        
+            'perfect-complements': {
+              // Utility function: U(x,y) = A·min(ax, by)
+              utility: (x, y, config) => {
+                const { pc_A, pc_a, pc_b } = config;
+                const safeX = Math.max(0, x);
+                const safeY = Math.max(0, y);
+                return pc_A * Math.min(pc_a * safeX, pc_b * safeY);
+              },
+        
+              // Marginal utility of X: A*a if ax < by, 0 otherwise
+              marginalX: (x, y, config) => {
+                const { pc_A, pc_a, pc_b } = config;
+                return (pc_a * x < pc_b * y) ? pc_A * pc_a : 0;
+              },
+        
+              // Marginal utility of Y: A*b if by < ax, 0 otherwise
+              marginalY: (x, y, config) => {
+                const { pc_A, pc_a, pc_b } = config;
+                return (pc_b * y < pc_a * x) ? pc_A * pc_b : 0;
+              },
+        
+              // MRS: 0 on horizontal, ∞ on vertical, undefined at kink
+              mrs: (x, y, config) => {
+                const { pc_a, pc_b } = config;
+                const ax = pc_a * x;
+                const by = pc_b * y;
+        
+                if (Math.abs(ax - by) < 0.01) return NaN; // At the kink
+                return (ax < by) ? 0 : Infinity;
+              },
+        
+              // Generate L-shaped indifference curve
+              generateIndifferenceCurve: (targetUtility, maxX, maxY, config, numPoints = 100) => {
+                const { pc_A, pc_a, pc_b } = config;
+        
+                if (targetUtility <= 0 || pc_A <= 0) {
+                  return {
+                    points: [],
+                    curveType: 'L-shaped',
+                    metadata: {
+                      utilityLevel: targetUtility,
+                      description: `Perfect Complements IC: U=${targetUtility.toFixed(2)}`,
+                      cornerX: 0,
+                      cornerY: 0,
+                      maxX: maxX,
+                      maxY: maxY
+                    }
+                  };
+                }
+        
+                // Corner point where ax = by
+                const cornerX = targetUtility / (pc_A * pc_a);
+                const cornerY = targetUtility / (pc_A * pc_b);
+        
+                return {
+                  points: [], // L-shapes handled by drawLShape method
+                  curveType: 'L-shaped',
+                  metadata: {
+                    utilityLevel: targetUtility,
+                    description: `Perfect Complements IC: U=${targetUtility.toFixed(2)}`,
+                    cornerX: Math.max(0.001, cornerX),
+                    cornerY: Math.max(0.001, cornerY),
+                    maxX: maxX,
+                    maxY: maxY
+                  }
+                };
+              }
+            },
+        
+            'ces': {
+              // CES Utility: U(x,y) = (ax^ρ + by^ρ)^(1/ρ) where b = 1-a
+              utility: (x, y, config) => {
+                const { ces_a, ces_rho } = config;
+                const ces_b = 1 - ces_a;
+                const safeX = Math.max(0.001, x);
+                const safeY = Math.max(0.001, y);
+                const EPS = 1e-6;
+        
+                if (Math.abs(ces_rho) < EPS) {
+                  // ρ → 0: Cobb-Douglas
+                  const total = ces_a + ces_b;
+                  return Math.pow(safeX, ces_a / total) * Math.pow(safeY, ces_b / total);
+                }
+                if (Math.abs(ces_rho - 1) < EPS) {
+                  // Perfect substitutes
+                  return ces_a * safeX + ces_b * safeY;
+                }
+        
+                const S = ces_a * Math.pow(safeX, ces_rho) + ces_b * Math.pow(safeY, ces_rho);
+                return Math.pow(S, 1 / ces_rho);
+              },
+        
+              // Marginal utility of X for CES
+              marginalX: (x, y, config) => {
+                const { ces_a, ces_rho } = config;
+                const ces_b = 1 - ces_a;
+                const safeX = Math.max(0.001, x);
+                const safeY = Math.max(0.001, y);
+                const EPS = 1e-6;
+        
+                if (Math.abs(ces_rho) < EPS) {
+                  // Cobb-Douglas case
+                  const total = ces_a + ces_b;
+                  const alpha = ces_a / total;
+                  const beta = ces_b / total;
+                  return alpha * Math.pow(safeX, alpha - 1) * Math.pow(safeY, beta);
+                }
+                if (Math.abs(ces_rho - 1) < EPS) {
+                  return ces_a;
+                }
+        
+                const S = ces_a * Math.pow(safeX, ces_rho) + ces_b * Math.pow(safeY, ces_rho);
+                return ces_a * Math.pow(safeX, ces_rho - 1) * Math.pow(S, (1 / ces_rho) - 1);
+              },
+        
+              // Marginal utility of Y for CES
+              marginalY: (x, y, config) => {
+                const { ces_a, ces_rho } = config;
+                const ces_b = 1 - ces_a;
+                const safeX = Math.max(0.001, x);
+                const safeY = Math.max(0.001, y);
+                const EPS = 1e-6;
+        
+                if (Math.abs(ces_rho) < EPS) {
+                  // Cobb-Douglas case
+                  const total = ces_a + ces_b;
+                  const alpha = ces_a / total;
+                  const beta = ces_b / total;
+                  return beta * Math.pow(safeX, alpha) * Math.pow(safeY, beta - 1);
+                }
+                if (Math.abs(ces_rho - 1) < EPS) {
+                  return ces_b;
+                }
+        
+                const S = ces_a * Math.pow(safeX, ces_rho) + ces_b * Math.pow(safeY, ces_rho);
+                return ces_b * Math.pow(safeY, ces_rho - 1) * Math.pow(S, (1 / ces_rho) - 1);
+              },
+        
+              // MRS for CES: (a/b)(y/x)^(1-ρ)
+              mrs: (x, y, config) => {
+                const { ces_a, ces_rho } = config;
+                const ces_b = 1 - ces_a;
+                const safeX = Math.max(0.001, x);
+                const EPS = 1e-6;
+        
+                if (Math.abs(ces_rho) < EPS) {
+                  // Cobb-Douglas: MRS = (a/b)(y/x)
+                  return (ces_a / ces_b) * (y / safeX);
+                }
+                if (Math.abs(ces_rho - 1) < EPS) {
+                  return ces_a / ces_b;
+                }
+        
+                return (ces_a / ces_b) * Math.pow(y / safeX, 1 - ces_rho);
+              },
+        
+              // Generate indifference curve for CES
+              generateIndifferenceCurve: (U, maxX, maxY, config, numPoints = 100) => {
+                const { ces_a, ces_rho } = config;
+                const ces_b = 1 - ces_a;
+                const EPS = 1e-6;
+                const pts = [];
+        
+                if (Math.abs(ces_rho) < EPS) {
+                  // Cobb-Douglas case
+                  const total = ces_a + ces_b;
+                  const alpha = ces_a / total;
+                  const beta = ces_b / total;
+                  for (let i = 0; i <= numPoints; i++) {
+                    const x = (i / numPoints) * maxX;
+                    if (x <= 0.001) continue;
+                    const y = Math.pow(U / Math.pow(x, alpha), 1 / beta);
+                    if (y > 0 && isFinite(y)) pts.push({ x, y });
+                  }
+                } else if (Math.abs(ces_rho - 1) < EPS) {
+                  // Perfect substitutes
+                  const yInt = U / ces_b;
+                  const xInt = U / ces_a;
+                  if (yInt > 0) pts.push({ x: 0, y: yInt });
+                  if (xInt > 0) pts.push({ x: xInt, y: 0 });
+                } else {
+                  // General CES
+                  const yLimit = maxY;
+                  const term = (Math.pow(U, ces_rho) - ces_b * Math.pow(yLimit, ces_rho)) / ces_a;
+                  const xMin = Math.max(0.001, term > 0 ? Math.pow(term, 1 / ces_rho) : 0.001);
+        
+                  for (let i = 0; i <= numPoints; i++) {
+                    const t = i / numPoints;
+                    const x = xMin + (maxX - xMin) * (Math.exp(t * Math.log(10)) - 1) / 9;
+                    if (x <= 0.001) continue;
+        
+                    const termCalc = (Math.pow(U, ces_rho) - ces_a * Math.pow(x, ces_rho)) / ces_b;
+                    if (termCalc > 0) {
+                      const y = Math.pow(termCalc, 1 / ces_rho);
+                      if (y > 0 && isFinite(y)) pts.push({ x, y });
+                    }
+                  }
+                }
+        
+                return {
+                  points: pts,
+                  curveType: 'smooth',
+                  metadata: {
+                    utilityLevel: U,
+                    description: `CES IC: U=${U.toFixed(2)}, ρ=${ces_rho.toFixed(1)}`
+                  }
+                };
+              }
+            },
+        
+            'quasilinear': {
+              // Utility function: U(x,y) = x^α + by
+              utility: (x, y, config) => {
+                const { ql_alpha, ql_b } = config;
+                const safeX = Math.max(0.001, x);
+                const safeY = Math.max(0, y);
+                return Math.pow(safeX, ql_alpha) + ql_b * safeY;
+              },
+        
+              // Marginal utility of X: MUx = α·x^(α-1)
+              marginalX: (x, y, config) => {
+                const { ql_alpha } = config;
+                const safeX = Math.max(0.001, x);
+                return ql_alpha * Math.pow(safeX, ql_alpha - 1);
+              },
+        
+              // Marginal utility of Y: MUy = b (constant)
+              marginalY: (x, y, config) => {
+                const { ql_b } = config;
+                return ql_b;
+              },
+        
+              // MRS = (α·x^(α-1))/b
+              mrs: (x, y, config) => {
+                const { ql_alpha, ql_b } = config;
+                const safeX = Math.max(0.001, x);
+                return (ql_alpha * Math.pow(safeX, ql_alpha - 1)) / ql_b;
+              },
+        
+              // Generate indifference curve for quasilinear
+              generateIndifferenceCurve: (targetUtility, maxX, maxY, config, numPoints = 100) => {
+                const { ql_alpha, ql_b } = config;
+                const points = [];
+        
+                for (let i = 0; i <= numPoints; i++) {
+                  const x = (i / numPoints) * maxX;
+                  if (x <= 0.001) continue;
+        
+                  try {
+                    // From U = x^α + by, solve for y: y = (U - x^α)/b
+                    const y = (targetUtility - Math.pow(x, ql_alpha)) / ql_b;
+        
+                    if (y >= 0 && isFinite(y)) {
+                      points.push({ x, y });
+                    }
+                  } catch (e) {
+                    // Skip invalid points
+                  }
+                }
+        
+                return {
+                  points: points,
+                  curveType: 'smooth',
+                  metadata: {
+                    utilityLevel: targetUtility,
+                    description: `Quasilinear IC: U=${targetUtility.toFixed(2)}`
+                  }
+                };
+              }
+            }
+          },
+        
+          // Create 3D utility surface from utility function parameters
+          create3DUtilitySurface: (functionType, config, bounds = {}, resolution = 40) => {
+            const { maxX = 10, maxY = 10, maxU = 12 } = bounds;
+            const utilityFn = UtilityMath.utilityFunctions[functionType].utility;
+            const vertices = [];
+            const faces = [];
+        
+            // Generate vertices with utility math
+            for (let i = 0; i <= resolution; i++) {
+              for (let j = 0; j <= resolution; j++) {
+                const x = (i / resolution) * maxX;
+                const y = (j / resolution) * maxY;
+                const u = utilityFn(x, y, config);
+        
+                // Map utility coordinates to generic 3D coordinates
+                // Good Y on X-axis, Utility on Y-axis, Good X on Z-axis
+                vertices.push({ x: y, y: u, z: x });
+              }
+            }
+        
+            // Generate faces (triangles for mesh)
+            for (let i = 0; i < resolution; i++) {
+              for (let j = 0; j < resolution; j++) {
+                const idx = i * (resolution + 1) + j;
+        
+                // Two triangles per square
+                faces.push([idx, idx + 1, idx + resolution + 1]);
+                faces.push([idx + 1, idx + resolution + 2, idx + resolution + 1]);
+              }
+            }
+        
+            const surfaceData = { vertices, faces };
+        
+            // Call generic canvasUtils function
+            return CanvasUtils.create3DSurface(surfaceData, resolution);
+          },
+        
+          // Generate cross-section curve for 2D analysis
+          generateCrossSection: (functionType, config, fixedVar, fixedValue, maxInput = 10, points = 100) => {
+            const utilityFn = UtilityMath.utilityFunctions[functionType].utility;
+            const curve = [];
+        
+            for (let i = 0; i <= points; i++) {
+              const input = (i / points) * maxInput + 0.1;
+              const x = fixedVar === 'Y' ? input : fixedValue;
+              const y = fixedVar === 'X' ? input : fixedValue;
+        
+              const utility = utilityFn(x, y, config);
+        
+              curve.push({
+                input,
+                utility,
+                x,
+                y
+              });
+            }
+        
+            return curve;
+          },
+        
+          // Calculate MRS at a specific point (dispatcher function)
+          calculateMRS: (functionType, x, y, config) => {
+            const utilFunc = UtilityMath.utilityFunctions[functionType];
+            if (!utilFunc || !utilFunc.mrs) {
+              return NaN;
+            }
+            return utilFunc.mrs(x, y, config);
+          },
+        
+          // Generate indifference curve data points (dispatcher function)
+          generateIndifferenceCurve: (functionType, config, targetUtility, maxX, maxY, numPoints = 100) => {
+            const utilFunc = UtilityMath.utilityFunctions[functionType];
+        
+            if (!utilFunc || !utilFunc.generateIndifferenceCurve) {
+              console.error(`Indifference curve generation not implemented for ${functionType}`);
+              return {
+                points: [],
+                curveType: 'smooth',
+                metadata: {
+                  utilityLevel: targetUtility,
+                  description: `Unknown utility type: ${functionType}`
+                }
+              };
+            }
+        
+            return utilFunc.generateIndifferenceCurve(targetUtility, maxX, maxY, config, numPoints);
+          }
+        };
+        
+        // Make available globally
+        if (typeof window !== 'undefined') {
+          window.UtilityMath = UtilityMath;
+        }
+        
+    </script>
+    <script>
+        // Embedded Module: canvasUtils.js
+        // Enhanced Canvas Utilities for Production Function Visualization
+        // Provides both 2D drawing utilities (adapted from UMP2) and 3D Three.js utilities
+        
+        const CanvasUtils = {
+        
+          // ========================================
+          // 2D CANVAS UTILITIES (from UMP2)
+          // ========================================
+        
+          // Initialize high-DPI canvas
+          initCanvas: (canvas, width = 500, height = 400) => {
+            const devicePixelRatio = window.devicePixelRatio || 1;
+        
+            canvas.width = width * devicePixelRatio;
+            canvas.height = height * devicePixelRatio;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+        
+            const ctx = canvas.getContext('2d');
+            ctx.scale(devicePixelRatio, devicePixelRatio);
+        
+            // Clear with white background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+        
+            return { ctx, width, height };
+          },
+        
+          // Calculate responsive margins
+          calculateMargins: (width, height) => {
+            const minMargin = 30;
+            const marginRatio = 0.08;
+        
+            return {
+              top: Math.max(minMargin, Math.round(height * marginRatio)),
+              bottom: Math.max(minMargin + 15, Math.round(height * (marginRatio + 0.03))), // Space for x-axis labels and title
+              left: Math.max(minMargin + 12, Math.round(width * (marginRatio + 0.03))), // Space for y-axis labels and title
+              right: Math.max(minMargin, Math.round(width * marginRatio))
+            };
+          },
+        
+          // Create coordinate transformation
+          createTransform: (margins, width, height, maxX, maxY, minX = 0, minY = 0) => {
+            const drawWidth = width - margins.left - margins.right;
+            const drawHeight = height - margins.top - margins.bottom;
+            const scaleX = drawWidth / (maxX - minX);
+            const scaleY = drawHeight / (maxY - minY);
+        
+            return {
+              toCanvas: (x, y) => ({
+                x: margins.left + (x - minX) * scaleX,
+                y: height - margins.bottom - (y - minY) * scaleY
+              }),
+              fromCanvas: (canvasX, canvasY) => ({
+                x: minX + (canvasX - margins.left) / scaleX,
+                y: minY + (height - margins.bottom - canvasY) / scaleY
+              }),
+              scaleX,
+              scaleY,
+              drawWidth,
+              drawHeight
+            };
+          },
+        
+          // Draw coordinate axes
+          drawAxes: (ctx, margins, width, height, labelX = 'Labor (L)', labelY = 'Capital (K)') => {
+            ctx.strokeStyle = '#374151';
+            ctx.lineWidth = 2;
+        
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(margins.left, height - margins.bottom);
+            ctx.lineTo(width - margins.right, height - margins.bottom);
+            ctx.stroke();
+        
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(margins.left, height - margins.bottom);
+            ctx.lineTo(margins.left, margins.top);
+            ctx.stroke();
+        
+            // Axis labels
+            const fontSize = Math.max(12, Math.round(width * 0.024));
+            ctx.fillStyle = '#374151';
+            ctx.font = `${fontSize}px sans-serif`;
+        
+            // X-axis label
+            ctx.textAlign = 'center';
+            ctx.fillText(labelX, width / 2, height - 10);
+        
+            // Y-axis label (rotated)
+            ctx.save();
+            ctx.translate(15, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillText(labelY, 0, 0);
+            ctx.restore();
+        
+            return fontSize;
+          },
+        
+          // Draw grid lines
+          drawGrid: (ctx, margins, width, height, transform, gridConfig = null) => {
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 1;
+        
+            if (!gridConfig) return;
+        
+            const { xPoints = [], yPoints = [] } = gridConfig;
+        
+            // Vertical grid lines
+            for (const x of xPoints) {
+              const pos = transform.toCanvas(x, 0);
+              ctx.beginPath();
+              ctx.moveTo(pos.x, margins.top);
+              ctx.lineTo(pos.x, height - margins.bottom);
+              ctx.stroke();
+            }
+        
+            // Horizontal grid lines
+            for (const y of yPoints) {
+              const pos = transform.toCanvas(0, y);
+              ctx.beginPath();
+              ctx.moveTo(margins.left, pos.y);
+              ctx.lineTo(width - margins.right, pos.y);
+              ctx.stroke();
+            }
+          },
+        
+          // Draw tick marks and labels
+          drawTicks: (ctx, margins, width, height, transform, gridConfig = null) => {
+            const fontSize = Math.max(10, Math.round(width * 0.02));
+            ctx.fillStyle = '#6b7280';
+            ctx.font = `${fontSize}px sans-serif`;
+        
+            if (!gridConfig) return;
+        
+            const { xPoints = [], yPoints = [] } = gridConfig;
+        
+            // X-axis ticks
+            ctx.textAlign = 'center';
+            for (const x of xPoints) {
+              const pos = transform.toCanvas(x, 0);
+              const label = x % 1 === 0 ? x.toString() : x.toFixed(1);
+              ctx.fillText(label, pos.x, height - margins.bottom + 20);
+            }
+        
+            // Y-axis ticks
+            ctx.textAlign = 'right';
+            for (const y of yPoints) {
+              const pos = transform.toCanvas(0, y);
+              const label = y % 1 === 0 ? y.toString() : y.toFixed(1);
+              ctx.fillText(label, margins.left - 8, pos.y + fontSize/3);
+            }
+          },
+        
+          // Draw a curve from data points
+          drawCurve: (ctx, points, transform, style = {}) => {
+            if (!points || points.length === 0) return;
+        
+            const {
+              color = '#1d4ed8',
+              lineWidth = 2,
+              dash = []
+            } = style;
+        
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.setLineDash(dash);
+        
+            ctx.beginPath();
+            let firstPoint = true;
+        
+            for (const point of points) {
+              if (isFinite(point.x) && isFinite(point.y)) {
+                const canvasPos = transform.toCanvas(point.x, point.y);
+                if (firstPoint) {
+                  ctx.moveTo(canvasPos.x, canvasPos.y);
+                  firstPoint = false;
+                } else {
+                  ctx.lineTo(canvasPos.x, canvasPos.y);
+                }
+              }
+            }
+        
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset dash
+          },
+        
+          // Draw L-shaped curve for perfect complements (fixed-proportions production)
+          drawLShape: (ctx, cornerX, cornerY, maxX, maxY, transform, style = {}) => {
+            const {
+              color = '#1d4ed8',
+              lineWidth = 2
+            } = style;
+        
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.setLineDash([]);
+        
+            // Draw horizontal segment from corner to right edge
+            const corner = transform.toCanvas(cornerX, cornerY);
+            const rightEdge = transform.toCanvas(maxX, cornerY);
+        
+            ctx.beginPath();
+            ctx.moveTo(corner.x, corner.y);
+            ctx.lineTo(rightEdge.x, rightEdge.y);
+            ctx.stroke();
+        
+            // Draw vertical segment from corner to top edge
+            const topEdge = transform.toCanvas(cornerX, maxY);
+        
+            ctx.beginPath();
+            ctx.moveTo(corner.x, corner.y);
+            ctx.lineTo(topEdge.x, topEdge.y);
+            ctx.stroke();
+          },
+        
+          // Draw a straight line (for linear production function)
+          drawLine: (ctx, x1, y1, x2, y2, transform, style = {}) => {
+            const {
+              color = '#dc2626',
+              lineWidth = 3,
+              dash = []
+            } = style;
+        
+            const pos1 = transform.toCanvas(x1, y1);
+            const pos2 = transform.toCanvas(x2, y2);
+        
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.setLineDash(dash);
+        
+            ctx.beginPath();
+            ctx.moveTo(pos1.x, pos1.y);
+            ctx.lineTo(pos2.x, pos2.y);
+            ctx.stroke();
+        
+            ctx.setLineDash([]); // Reset dash
+          },
+        
+          // Highlight a point with a circle
+          highlightPoint: (ctx, x, y, transform, style = {}) => {
+            const {
+              outerColor = '#dc2626',
+              innerColor = '#ffffff',
+              outerRadius = 6,
+              innerRadius = 3
+            } = style;
+        
+            const pos = transform.toCanvas(x, y);
+        
+            // Outer circle
+            ctx.fillStyle = outerColor;
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, outerRadius, 0, 2 * Math.PI);
+            ctx.fill();
+        
+            // Inner circle
+            ctx.fillStyle = innerColor;
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, innerRadius, 0, 2 * Math.PI);
+            ctx.fill();
+          },
+        
+          // Add text label at a point
+          addLabel: (ctx, text, x, y, transform, style = {}) => {
+            const {
+              color = '#374151',
+              fontSize = 12,
+              fontWeight = 'normal',
+              offsetX = 10,
+              offsetY = -10,
+              align = 'left',
+              backgroundColor = 'rgba(255, 255, 255, 0.6)',
+              backgroundPadding = 0,
+              borderRadius = 0
+            } = style;
+        
+            const pos = transform.toCanvas(x, y);
+        
+            // Set up font for text metrics
+            ctx.font = `${fontWeight} ${fontSize}px sans-serif`;
+        
+            // Draw background if specified
+            if (backgroundColor) {
+              const metrics = ctx.measureText(text);
+              const textWidth = metrics.width;
+              const textHeight = fontSize;
+        
+              // Calculate background rectangle position and size
+              let bgX, bgY, bgWidth, bgHeight;
+        
+              if (align === 'left') {
+                bgX = pos.x + offsetX - backgroundPadding;
+                bgY = pos.y + offsetY - textHeight - backgroundPadding;
+                bgWidth = textWidth + 2 * backgroundPadding;
+                bgHeight = textHeight + 2 * backgroundPadding;
+              } else if (align === 'center') {
+                bgX = pos.x + offsetX - textWidth/2 - backgroundPadding;
+                bgY = pos.y + offsetY - textHeight - backgroundPadding;
+                bgWidth = textWidth + 2 * backgroundPadding;
+                bgHeight = textHeight + 2 * backgroundPadding;
+              } else { // 'right'
+                bgX = pos.x + offsetX - textWidth - backgroundPadding;
+                bgY = pos.y + offsetY - textHeight - backgroundPadding;
+                bgWidth = textWidth + 2 * backgroundPadding;
+                bgHeight = textHeight + 2 * backgroundPadding;
+              }
+        
+              // Draw rounded rectangle background
+              ctx.fillStyle = backgroundColor;
+              if (borderRadius > 0) {
+                ctx.beginPath();
+                ctx.roundRect(bgX, bgY, bgWidth, bgHeight, borderRadius);
+                ctx.fill();
+              } else {
+                ctx.fillRect(bgX, bgY, bgWidth, bgHeight);
+              }
+            }
+        
+            // Draw text - ensure font is set right before drawing
+            ctx.fillStyle = color;
+            ctx.textAlign = align;
+            ctx.font = `${fontWeight} ${fontSize}px sans-serif`;
+            ctx.fillText(text, pos.x + offsetX, pos.y + offsetY);
+          },
+        
+          // Set up clipping region
+          setupClipping: (ctx, margins, width, height) => {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(margins.left, margins.top,
+                     width - margins.left - margins.right,
+                     height - margins.top - margins.bottom);
+            ctx.clip();
+          },
+        
+          // Restore clipping
+          restoreClipping: (ctx) => {
+            ctx.restore();
+          },
+        
+          // ========================================
+          // 3D THREE.JS UTILITIES (NEW)
+          // ========================================
+        
+          // Initialize 3D scene and renderer
+          init3DCanvas: (container, width = 600, height = 500) => {
+            // Create scene
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf8fafc);
+        
+            // Create camera
+            const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+        
+            // Create renderer
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        
+            // Clear container and add renderer
+            container.innerHTML = '';
+            container.appendChild(renderer.domElement);
+        
+            return { scene, camera, renderer };
+          },
+        
+          // Dispose of 3D renderer and clean up resources
+          dispose3DCanvas: (renderer) => {
+            if (renderer) {
+              renderer.dispose();
+              if (renderer.domElement && renderer.domElement.parentNode) {
+                renderer.domElement.parentNode.removeChild(renderer.domElement);
+              }
+            }
+          },
+        
+          // Create generic 3D surface from pre-computed surface data
+          create3DSurface: (surfaceData, resolution = 40) => {
+            // Create geometry
+            const geometry = new THREE.BufferGeometry();
+        
+            // Convert vertices to Three.js format
+            const positions = [];
+            const indices = [];
+        
+            // Add vertices - expects {x, y, z} format
+            for (const vertex of surfaceData.vertices) {
+              positions.push(vertex.x, vertex.y, vertex.z);
+            }
+        
+            // Add faces (triangles)
+            for (const face of surfaceData.faces) {
+              indices.push(face[0], face[1], face[2]);
+            }
+        
+            geometry.setIndex(indices);
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geometry.computeVertexNormals();
+        
+            return geometry;
+          },
+        
+          // Add a 3D slicing plane to the scene
+          add3DSlicingPlane: (scene, center = { x: 0, y: 10, z: 0 }, orientation = 'horizontal', color = 0xffeb3b, opacity = 0.3, size = { width: 30, height: 30, depth: 30 }, name = null) => {
+            let geometry;
+            const { width, height, depth } = size;
+        
+            if (orientation === 'horizontal') {
+              // Horizontal plane (XZ plane) - constant output, varying K and L
+              geometry = new THREE.PlaneGeometry(width, depth);
+              geometry.rotateX(-Math.PI / 2);
+            } else if (orientation === 'vertical-x') {
+              // Vertical plane perpendicular to X-axis (constant K, varying L and Q) - YZ plane
+              geometry = new THREE.PlaneGeometry(depth, height);
+              geometry.rotateY(Math.PI / 2);
+            } else if (orientation === 'vertical-z') {
+              // Vertical plane perpendicular to Z-axis (constant L, varying K and Q) - XY plane
+              geometry = new THREE.PlaneGeometry(width, height);
+            }
+        
+            const material = new THREE.MeshLambertMaterial({
+              color: color,
+              transparent: true,
+              opacity: opacity,
+              side: THREE.DoubleSide
+            });
+        
+            const plane = new THREE.Mesh(geometry, material);
+            plane.position.set(center.x, center.y, center.z);
+            plane.renderOrder = 2; // Render after production surface (which should be 1)
+        
+            if (name) {
+              plane.name = name;
+            }
+        
+            scene.add(plane);
+            return plane;
+          },
+        
+          // Update 3D slicing plane position
+          update3DSlicingPlane: (plane, newCenter) => {
+            if (plane && newCenter) {
+              plane.position.set(newCenter.x, newCenter.y, newCenter.z);
+            }
+          },
+        
+          // Remove 3D slicing planes from scene
+          remove3DSlicingPlanes: (scene, namePrefix = null) => {
+            const planesToRemove = scene.children.filter(child => {
+              if (namePrefix) {
+                return child.name && child.name.startsWith(namePrefix);
+              }
+              return child.name && child.name.includes('slicing');
+            });
+        
+            planesToRemove.forEach(plane => {
+              scene.remove(plane);
+              if (plane.geometry) plane.geometry.dispose();
+              if (plane.material) plane.material.dispose();
+            });
+        
+            return planesToRemove.length;
+          },
+        
+          // Set up orbital controls for 3D camera
+          setup3DOrbitControls: (camera, renderer, target, controlsConfig = {}) => {
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        
+            // Set controls properties from config
+            controls.target.set(target.x, target.y, target.z);
+            controls.enableDamping = controlsConfig.enableDamping ?? true;
+            controls.dampingFactor = controlsConfig.dampingFactor ?? 0.1;
+            controls.enableZoom = controlsConfig.enableZoom ?? true;
+            controls.enableRotate = controlsConfig.enableRotate ?? true;
+            controls.enablePan = controlsConfig.enablePan ?? false;
+        
+            controls.update();
+        
+            return controls;
+          },
+        
+          // Reset 3D view to specified position and target
+          reset3DView: (camera, controls, position, target) => {
+            if (camera && controls && position && target) {
+              camera.position.set(position.x, position.y, position.z);
+              controls.target.set(target.x, target.y, target.z);
+              controls.update();
+            }
+          },
+        
+          // Set up scene lighting
+          setup3DLighting: (scene, config = {}) => {
+            const {
+              ambientColor = 0x404040,
+              ambientIntensity = 0.6,
+              directionalColor = 0xffffff,
+              directionalIntensity = 0.8,
+              directionalPosition = { x: 50, y: 50, z: 50 }
+            } = config;
+        
+            // Ambient light
+            const ambientLight = new THREE.AmbientLight(ambientColor, ambientIntensity);
+            scene.add(ambientLight);
+        
+            // Directional light
+            const directionalLight = new THREE.DirectionalLight(directionalColor, directionalIntensity);
+            directionalLight.position.set(directionalPosition.x, directionalPosition.y, directionalPosition.z);
+            directionalLight.castShadow = true;
+        
+            // Configure shadow map
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 500;
+        
+            scene.add(directionalLight);
+        
+            return { ambientLight, directionalLight };
+          },
+        
+          // Create and add 3D axes
+          add3DAxes: (scene, axisConfig = {}) => {
+            // Default configuration with backward compatibility for production function
+            const defaultConfig = {
+              maxX: 30,
+              maxY: 30,
+              maxZ: 30,
+              xLabel: 'Capital',
+              yLabel: 'Output',
+              zLabel: 'Labor',
+              labelColor: 0x000000,
+              labelScale: 10,
+              labelOffsets: {
+                x: { x: 0, y: 0, z: -5 },
+                y: { x: 0, y: 3, z: 0 },
+                z: { x: -5, y: 0, z: 0 }
+              }
+            };
+        
+            // Merge with provided config
+            const config = { ...defaultConfig, ...axisConfig };
+            if (axisConfig.labelOffsets) {
+              config.labelOffsets = { ...defaultConfig.labelOffsets, ...axisConfig.labelOffsets };
+            }
+        
+            const axesGroup = new THREE.Group();
+        
+            // Materials for axes - all black
+            const axisMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
+        
+            // X-axis
+            const xAxisGeometry = new THREE.BufferGeometry().setFromPoints([
+              new THREE.Vector3(0, 0, 0),
+              new THREE.Vector3(config.maxX, 0, 0)
+            ]);
+            const xAxis = new THREE.Line(xAxisGeometry, axisMaterial);
+            axesGroup.add(xAxis);
+        
+            // Y-axis
+            const yAxisGeometry = new THREE.BufferGeometry().setFromPoints([
+              new THREE.Vector3(0, 0, 0),
+              new THREE.Vector3(0, config.maxY, 0)
+            ]);
+            const yAxis = new THREE.Line(yAxisGeometry, axisMaterial);
+            axesGroup.add(yAxis);
+        
+            // Z-axis
+            const zAxisGeometry = new THREE.BufferGeometry().setFromPoints([
+              new THREE.Vector3(0, 0, 0),
+              new THREE.Vector3(0, 0, config.maxZ)
+            ]);
+            const zAxis = new THREE.Line(zAxisGeometry, axisMaterial);
+            axesGroup.add(zAxis);
+        
+            // Add axis labels using text sprites
+            // X-axis label
+            const xText = CanvasUtils.create3DTextSprite(config.xLabel, config.labelColor);
+            xText.position.set(
+              config.maxX + config.labelOffsets.x.x,
+              config.labelOffsets.x.y,
+              config.labelOffsets.x.z
+            );
+            xText.scale.set(config.labelScale, config.labelScale, config.labelScale);
+            axesGroup.add(xText);
+        
+            // Z-axis label
+            const zText = CanvasUtils.create3DTextSprite(config.zLabel, config.labelColor);
+            zText.position.set(
+              config.labelOffsets.z.x,
+              config.labelOffsets.z.y,
+              config.maxZ + config.labelOffsets.z.z
+            );
+            zText.scale.set(config.labelScale, config.labelScale, config.labelScale);
+            axesGroup.add(zText);
+        
+            // Y-axis label
+            const yText = CanvasUtils.create3DTextSprite(config.yLabel, config.labelColor);
+            yText.position.set(
+              config.labelOffsets.y.x,
+              config.maxY + config.labelOffsets.y.y,
+              config.labelOffsets.y.z
+            );
+            yText.scale.set(config.labelScale, config.labelScale, config.labelScale);
+            axesGroup.add(yText);
+        
+            scene.add(axesGroup);
+            return axesGroup;
+          },
+        
+          // Create 3D text sprite for axis labels
+          create3DTextSprite: (text, color = 0x000000) => {
+            // Create a canvas for the text
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+        
+            // High-DPI support for crisp text
+            const devicePixelRatio = window.devicePixelRatio || 1;
+            const size = 128;
+        
+            // Set canvas size with high-DPI scaling
+            canvas.width = size * devicePixelRatio;
+            canvas.height = size * devicePixelRatio;
+            canvas.style.width = size + 'px';
+            canvas.style.height = size + 'px';
+        
+            // Scale context for high-DPI
+            context.scale(devicePixelRatio, devicePixelRatio);
+        
+            // Set font and fill text - larger font for better readability
+            context.font = 'Bold 32px Arial';
+            context.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+        
+            // Improve text rendering quality
+            context.imageSmoothingEnabled = true;
+            context.imageSmoothingQuality = 'high';
+        
+            context.fillText(text, size / 2, size / 2);
+        
+            // Create texture from canvas
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+        
+            // Create material with texture
+            const material = new THREE.SpriteMaterial({
+              map: texture,
+              transparent: true,
+              alphaTest: 0.1
+            });
+        
+            // Create and return sprite
+            const sprite = new THREE.Sprite(material);
+            return sprite;
+          },
+        
+          // Render 3D scene
+          render3DScene: (renderer, scene, camera) => {
+            renderer.render(scene, camera);
+          },
+        
+          // Animation loop for 3D scene
+          animate3D: (renderFunction) => {
+            const animate = () => {
+              requestAnimationFrame(animate);
+              renderFunction();
+            };
+            animate();
+          },
+        
+        
+        };
+        
+        // Make available globally for both module and script usage
+        if (typeof module !== 'undefined' && module.exports) {
+          module.exports = CanvasUtils;
+        } else {
+          window.CanvasUtils = CanvasUtils;
+        }
+    </script>
+
+    <!-- Original Inline Scripts -->
+
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          displayMath: [['$$', '$$'], ['\\[', '\\]']]
+        },
+        startup: {
+          ready: () => {
+            MathJax.startup.defaultReady();
+          }
+        }
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f1f5f9;
+        }
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+        }
+        .slider::-moz-range-thumb {
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            border: none;
+        }
+        canvas {
+            display: block;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: white;
+        }
+        .analysis-button {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .analysis-button:hover {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+        }
+        .analysis-button.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Load configuration and math modules -->
+    <script type="text/javascript">
+        const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+        // Utility-specific wrapper functions for generic slicing plane utilities
+        const UtilitySlicingPlane = {
+            create: (scene, analysisMode, params, bounds) => {
+                // Remove existing utility slicing planes
+                CanvasUtils.remove3DSlicingPlanes(scene, 'utilitySlicing');
+
+                // Get analysis mode configuration
+                const modeConfig = UtilConfig.analysisModes[analysisMode];
+                const planeType = modeConfig.slicingPlane;
+                const planeConfig = UtilConfig.slicingPlanes[planeType];
+
+                // Make planes 20% larger while keeping centers linked to original bounds
+                const planeSize = {
+                    width: bounds.maxY * 1.2,
+                    height: bounds.maxU * 1.2,
+                    depth: bounds.maxX * 1.2
+                };
+
+                let center, orientation;
+
+                switch (planeType) {
+                    case 'horizontal':
+                        // Horizontal plane for IC map analysis (constant utility)
+                        const utilityLevel = params.utilityLevel || 5;
+                        center = { x: bounds.maxY / 2, y: utilityLevel, z: bounds.maxX / 2 };
+                        orientation = 'horizontal';
+                        break;
+                    case 'vertical-Y':
+                        // Vertical plane for U vs X analysis (constant Y)
+                        const fixedY = params.goodYLevel || 3;
+                        center = { x: fixedY, y: bounds.maxU / 2, z: bounds.maxX / 2 };
+                        orientation = 'vertical-x';
+                        break;
+                    case 'vertical-X':
+                        // Vertical plane for U vs Y analysis (constant X)
+                        const fixedX = params.goodXLevel || 3;
+                        center = { x: bounds.maxY / 2, y: bounds.maxU / 2, z: fixedX };
+                        orientation = 'vertical-z';
+                        break;
+                }
+
+                // Create the slicing plane using generic utilities
+                return CanvasUtils.add3DSlicingPlane(
+                    scene,
+                    center,
+                    orientation,
+                    planeConfig.color,
+                    planeConfig.opacity,
+                    planeSize,
+                    'utilitySlicing_' + planeType
+                );
+            },
+
+            update: (scene, analysisMode, params, bounds) => {
+                // Get analysis mode configuration
+                const modeConfig = UtilConfig.analysisModes[analysisMode];
+                const planeType = modeConfig.slicingPlane;
+                const planeName = 'utilitySlicing_' + planeType;
+
+                // Find the plane in the scene
+                const plane = scene.children.find(child => child.name === planeName);
+                if (!plane) return;
+
+                // Calculate new center position based on current parameters
+                let newCenter;
+
+                switch (planeType) {
+                    case 'horizontal':
+                        const utilityLevel = params.utilityLevel || 5;
+                        newCenter = { x: plane.position.x, y: utilityLevel, z: plane.position.z };
+                        break;
+                    case 'vertical-Y':
+                        const fixedY = params.goodYLevel || 3;
+                        newCenter = { x: fixedY, y: plane.position.y, z: plane.position.z };
+                        break;
+                    case 'vertical-X':
+                        const fixedX = params.goodXLevel || 3;
+                        newCenter = { x: plane.position.x, y: plane.position.y, z: fixedX };
+                        break;
+                }
+
+                // Update the plane position using generic utilities
+                CanvasUtils.update3DSlicingPlane(plane, newCenter);
+            }
+        };
+
+        // Main Utility Function Visualization Component
+        const UtilityVisualization = () => {
+            // State for selected utility function
+            const [selectedUtilityFunction, setSelectedUtilityFunction] = useState('cobb-douglas');
+
+            // State for analysis mode (indifference-map, x-section, y-section)
+            const [selectedAnalysisMode, setSelectedAnalysisMode] = useState('indifference-map');
+
+            // State for all parameters - initialized with defaults
+            const [params, setParams] = useState(() => {
+                const allDefaults = {};
+
+                // Add analysis parameter defaults
+                Object.keys(UtilConfig.analysisParams).forEach(key => {
+                    const param = UtilConfig.analysisParams[key];
+                    allDefaults[key] = param.default;
+                });
+
+                // Add utility function parameter defaults
+                Object.keys(UtilConfig.utilityFunctions).forEach(funcKey => {
+                    const funcConfig = UtilConfig.utilityFunctions[funcKey];
+                    Object.keys(funcConfig.config.params).forEach(paramKey => {
+                        const param = funcConfig.config.params[paramKey];
+                        allDefaults[paramKey] = param.default;
+                    });
+                });
+
+                return allDefaults;
+            });
+
+            // State for slicing plane visibility (default: show)
+            const [planesVisible, setPlanesVisible] = useState(true);
+
+            // Canvas refs
+            const scene3DRef = useRef();
+            const topAnalysisRef = useRef();
+
+            // 3D scene management
+            const [scene3D, setScene3D] = useState(null);
+            const [camera3D, setCamera3D] = useState(null);
+            const [renderer3D, setRenderer3D] = useState(null);
+            const [controls3D, setControls3D] = useState(null);
+
+            // Helper functions for parameter management
+            const updateParam = useCallback((key, value) => {
+                setParams(prev => ({ ...prev, [key]: value }));
+            }, []);
+
+            const resetAnalysisParams = useCallback(() => {
+                const analysisDefaults = {};
+                Object.keys(UtilConfig.analysisParams).forEach(key => {
+                    const param = UtilConfig.analysisParams[key];
+                    analysisDefaults[key] = param.default;
+                });
+                setParams(prev => ({ ...prev, ...analysisDefaults }));
+            }, []);
+
+            const resetUtilityParams = useCallback(() => {
+                const funcConfig = UtilConfig.utilityFunctions[selectedUtilityFunction];
+                const functionDefaults = {};
+                Object.keys(funcConfig.config.params).forEach(key => {
+                    const param = funcConfig.config.params[key];
+                    functionDefaults[key] = param.default;
+                });
+                setParams(prev => ({ ...prev, ...functionDefaults }));
+            }, [selectedUtilityFunction]);
+
+            // Calculate utility analysis
+            const utilityAnalysis = useMemo(() => {
+                const funcConfig = UtilConfig.utilityFunctions[selectedUtilityFunction];
+                const utilityFn = UtilityMath.utilityFunctions[selectedUtilityFunction];
+
+                // Current good levels for analysis
+                const x = params.goodXLevel || 3;
+                const y = params.goodYLevel || 3;
+
+                // Calculate utility values
+                const utility = utilityFn.utility(x, y, params);
+                const marginalX = utilityFn.marginalX(x, y, params);
+                const marginalY = utilityFn.marginalY(x, y, params);
+                const mrs = utilityFn.mrs(x, y, params);
+
+                return {
+                    currentInputs: { x, y },
+                    currentUtility: utility,
+                    marginalUtilities: { x: marginalX, y: marginalY },
+                    mrs: mrs
+                };
+            }, [selectedUtilityFunction, params]);
+
+            // Generic function to render parameter controls
+            const renderParameterControls = useCallback((parameterConfig) => {
+                return Object.keys(parameterConfig).map(key => {
+                    const param = parameterConfig[key];
+                    return React.createElement('div', {
+                        key: key,
+                        className: "space-y-1"
+                    }, [
+                        React.createElement('label', {
+                            key: 'label',
+                            className: "block text-sm font-medium text-gray-600"
+                        }, param.label),
+                        React.createElement('div', {
+                            key: 'slider-container',
+                            className: "flex items-center space-x-3"
+                        }, [
+                            React.createElement('input', {
+                                key: 'slider',
+                                type: 'range',
+                                min: param.min,
+                                max: param.max,
+                                step: param.step,
+                                value: params[key] ?? param.default,
+                                onChange: (e) => updateParam(key, Number(e.target.value)),
+                                className: "flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                            }),
+                            React.createElement('span', {
+                                key: 'value',
+                                className: "text-sm font-mono text-gray-600 w-12 text-right"
+                            }, (params[key] ?? param.default).toFixed(param.precision))
+                        ])
+                    ]);
+                });
+            }, [params, updateParam]);
+
+            // Helper functions using the generic renderParameterControls
+            const renderAnalysisParameterControls = useCallback(() => {
+                return renderParameterControls(UtilConfig.analysisParams);
+            }, [renderParameterControls]);
+
+            const renderUtilityParameterControls = useCallback(() => {
+                const funcConfig = UtilConfig.utilityFunctions[selectedUtilityFunction];
+                return renderParameterControls(funcConfig.config.params);
+            }, [renderParameterControls, selectedUtilityFunction]);
+
+            // MathJax rendering effect
+            useEffect(() => {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise().catch((err) => console.log('MathJax typeset failed:', err));
+                }
+            }, [selectedUtilityFunction]);
+
+            // Helper function to render utility function equation display
+            const renderEquationDisplay = () => {
+                const funcConfig = UtilConfig.utilityFunctions[selectedUtilityFunction];
+                if (!funcConfig) return '';
+
+                let generalFormLatex = funcConfig.mathForm;
+                let currentValuesLatex = '';
+
+                // Add specific form with actual parameter values
+                switch(selectedUtilityFunction) {
+                    case 'cobb-douglas':
+                        const A = (params.cd_A ?? 1).toFixed(2);
+                        const alpha = (params.cd_alpha ?? 0.5).toFixed(2);
+                        const beta = (params.cd_beta ?? 0.5).toFixed(2);
+                        currentValuesLatex = `U = ${A}x<sup>${alpha}</sup>y<sup>${beta}</sup>`;
+                        break;
+                    case 'perfect-substitutes':
+                        const ps_a = (params.ps_a ?? 1.5).toFixed(2);
+                        const ps_b = (params.ps_b ?? 1.0).toFixed(2);
+                        currentValuesLatex = `U = ${ps_a}x + ${ps_b}y`;
+                        break;
+                    case 'perfect-complements':
+                        const pc_A = (params.pc_A ?? 1).toFixed(2);
+                        const pc_a = (params.pc_a ?? 1).toFixed(2);
+                        const pc_b = (params.pc_b ?? 1).toFixed(2);
+                        currentValuesLatex = `U = ${pc_A} min(${pc_a}x, ${pc_b}y)`;
+                        break;
+                    case 'ces':
+                        const ces_a = (params.ces_a ?? 0.5).toFixed(2);
+                        const ces_rho = (params.ces_rho ?? -0.5).toFixed(2);
+                        const ces_b = (1 - (params.ces_a ?? 0.5)).toFixed(2);
+                        const invRho = (1 / (params.ces_rho ?? -0.5)).toFixed(2);
+                        currentValuesLatex = `U = (${ces_a}x<sup>${ces_rho}</sup> + ${ces_b}y<sup>${ces_rho}</sup>)<sup>${invRho}</sup>`;
+                        break;
+                    case 'quasilinear':
+                        const ql_alpha = (params.ql_alpha ?? 0.5).toFixed(2);
+                        const ql_b = (params.ql_b ?? 1).toFixed(2);
+                        currentValuesLatex = `U = x<sup>${ql_alpha}</sup> + ${ql_b}y`;
+                        break;
+                }
+
+                const generalLatex = `$${generalFormLatex}$`;
+                const specificLatex = currentValuesLatex;
+
+                return React.createElement('div', {
+                    key: 'math-equation',
+                    className: "text-center"
+                }, [
+                    React.createElement('div', {
+                        key: 'general-form',
+                        className: "mb-1"
+                    }, generalLatex),
+                    React.createElement('div', {
+                        key: 'specific-form',
+                        className: "text-sm text-blue-600",
+                        dangerouslySetInnerHTML: { __html: specificLatex }
+                    })
+                ]);
+            };
+
+            // Initialize 3D scene
+            useEffect(() => {
+                if (!scene3DRef.current) return;
+
+                const container = scene3DRef.current;
+                const { scene, camera, renderer } = CanvasUtils.init3DCanvas(container, UtilConfig.layout.canvas3D.width, UtilConfig.layout.canvas3D.height);
+
+                // Set up lighting
+                CanvasUtils.setup3DLighting(scene, UtilConfig.scene3D.lighting);
+
+                // Add axes
+                const funcConfig = UtilConfig.utilityFunctions[selectedUtilityFunction];
+                const bounds = funcConfig.config.surface3D;
+                CanvasUtils.add3DAxes(scene, {
+                    maxX: bounds.maxY,    // Good Y on X-axis
+                    maxY: bounds.maxU,    // Utility on Y-axis (scaled to fit view)
+                    maxZ: bounds.maxX,    // Good X on Z-axis
+                    xLabel: 'Good Y',
+                    yLabel: 'Utility',
+                    zLabel: 'Good X',
+                    labelScale: 3.5,      // Scaled for smaller surface
+                    labelOffsets: {
+                        x: { x: 0, y: 0, z: -2 },
+                        y: { x: 0, y: 1, z: 0 },
+                        z: { x: -2, y: 0, z: 0 }
+                    }
+                });
+
+                // Set up camera controls
+                const controls = CanvasUtils.setup3DOrbitControls(camera, renderer, UtilConfig.scene3D.camera.target, UtilConfig.scene3D.controls);
+                camera.position.set(
+                    UtilConfig.scene3D.camera.position.x,
+                    UtilConfig.scene3D.camera.position.y,
+                    UtilConfig.scene3D.camera.position.z
+                );
+                controls.update();
+
+                // Start animation loop
+                const animate = () => {
+                    requestAnimationFrame(animate);
+                    controls.update();
+                    CanvasUtils.render3DScene(renderer, scene, camera);
+                };
+                animate();
+
+                setScene3D(scene);
+                setCamera3D(camera);
+                setRenderer3D(renderer);
+                setControls3D(controls);
+
+                // Cleanup function
+                return () => {
+                    CanvasUtils.dispose3DCanvas(renderer);
+                };
+            }, []);
+
+            // Update 3D utility surface when function or parameters change
+            useEffect(() => {
+                if (!scene3D || !renderer3D) return;
+
+                // Remove existing utility surfaces (both main and wireframe)
+                const surfacesToRemove = scene3D.children.filter(child =>
+                    child.name === 'utilitySurface' || child.name === 'utilitySurfaceWireframe'
+                );
+                surfacesToRemove.forEach(surface => {
+                    scene3D.remove(surface);
+                    surface.geometry?.dispose();
+                    surface.material?.dispose();
+                });
+
+                // Create new utility surface
+                const funcConfig = UtilConfig.utilityFunctions[selectedUtilityFunction];
+                const bounds = funcConfig.config.surface3D;
+
+                const geometry = UtilityMath.create3DUtilitySurface(
+                    selectedUtilityFunction,
+                    params,
+                    bounds,
+                    bounds.resolution
+                );
+
+                const material = new THREE.MeshLambertMaterial({
+                    color: bounds.meshColor,
+                    wireframe: false,
+                    transparent: true,
+                    opacity: 0.2,
+                    side: THREE.DoubleSide
+                });
+
+                const surface = new THREE.Mesh(geometry, material);
+                surface.name = 'utilitySurface';
+                surface.renderOrder = 1; // Render before slicing planes
+                scene3D.add(surface);
+
+                // Add wireframe version
+                const wireframeMaterial = new THREE.MeshBasicMaterial({
+                    color: bounds.wireframeColor,
+                    wireframe: true,
+                    transparent: true,
+                    opacity: 0.9
+                });
+
+                const wireframeSurface = new THREE.Mesh(geometry.clone(), wireframeMaterial);
+                wireframeSurface.name = 'utilitySurfaceWireframe';
+                wireframeSurface.renderOrder = 0; // Render first (wireframe behind everything)
+                scene3D.add(wireframeSurface);
+
+            }, [scene3D, renderer3D, selectedUtilityFunction, params]);
+
+            // Create and update slicing planes based on analysis mode
+            useEffect(() => {
+                if (!scene3D) return;
+
+                // Get surface bounds for current utility function
+                const funcConfig = UtilConfig.utilityFunctions[selectedUtilityFunction];
+                const bounds = funcConfig.config.surface3D;
+
+                // Create slicing plane only if planes are visible
+                if (planesVisible) {
+                    UtilitySlicingPlane.create(scene3D, selectedAnalysisMode, params, bounds);
+                } else {
+                    // Remove any existing slicing planes when hidden
+                    CanvasUtils.remove3DSlicingPlanes(scene3D, 'utilitySlicing');
+                }
+
+            }, [scene3D, selectedAnalysisMode, selectedUtilityFunction, planesVisible]);
+
+            // Update slicing plane positions when parameters change
+            useEffect(() => {
+                if (!scene3D || !planesVisible) return;
+
+                // Get surface bounds for current utility function
+                const funcConfig = UtilConfig.utilityFunctions[selectedUtilityFunction];
+                const bounds = funcConfig.config.surface3D;
+
+                // Update slicing plane position using wrapper function
+                UtilitySlicingPlane.update(scene3D, selectedAnalysisMode, params, bounds);
+
+            }, [scene3D, selectedAnalysisMode, params, selectedUtilityFunction, planesVisible]);
+
+            // Draw top analysis visualization
+            useEffect(() => {
+                if (!topAnalysisRef.current || !utilityAnalysis) return;
+
+                const canvas = topAnalysisRef.current;
+                const canvasConfig = UtilConfig.layout.analysisCanvas.topCanvas;
+                const { ctx, width, height } = CanvasUtils.initCanvas(canvas, canvasConfig.width, canvasConfig.height);
+                const margins = CanvasUtils.calculateMargins(width, height);
+
+                // Render based on analysis mode
+                switch (selectedAnalysisMode) {
+                    case 'indifference-map':
+                        renderIndifferenceCurveMap(ctx, width, height, margins);
+                        break;
+                    case 'x-section':
+                        renderUtilityVsXSection(ctx, width, height, margins);
+                        break;
+                    case 'y-section':
+                        renderUtilityVsYSection(ctx, width, height, margins);
+                        break;
+                }
+
+            }, [selectedUtilityFunction, selectedAnalysisMode, params, utilityAnalysis]);
+
+
+            // Rendering functions for 2D views
+            const renderIndifferenceCurveMap = useCallback((ctx, width, height, margins) => {
+                const funcConfig = UtilConfig.utilityFunctions[selectedUtilityFunction];
+                const visualConfig = funcConfig.config.icView;
+                const transform = CanvasUtils.createTransform(margins, width, height, visualConfig.maxX, visualConfig.maxY);
+
+                // Draw coordinate system
+                const gridConfig = {
+                    xPoints: visualConfig.gridPoints.x,
+                    yPoints: visualConfig.gridPoints.y
+                };
+
+                CanvasUtils.drawGrid(ctx, margins, width, height, transform, gridConfig);
+                CanvasUtils.drawAxes(ctx, margins, width, height, 'Good X', 'Good Y');
+                CanvasUtils.drawTicks(ctx, margins, width, height, transform, gridConfig);
+
+                CanvasUtils.setupClipping(ctx, margins, width, height);
+
+                // Draw background indifference curves
+                const utilityFn = UtilityMath.utilityFunctions[selectedUtilityFunction];
+                visualConfig.backgroundLevels.forEach(level => {
+                    const ic = utilityFn.generateIndifferenceCurve(level, visualConfig.maxX, visualConfig.maxY, params);
+
+                    if (ic.curveType === 'L-shaped' && ic.metadata) {
+                        CanvasUtils.drawLShape(ctx, ic.metadata.cornerX, ic.metadata.cornerY, visualConfig.maxX, visualConfig.maxY, transform, {
+                            color: '#d1d5db',
+                            lineWidth: 1
+                        });
+                    } else if (ic.points && ic.points.length > 0) {
+                        CanvasUtils.drawCurve(ctx, ic.points, transform, {
+                            color: '#d1d5db',
+                            lineWidth: 1
+                        });
+                    }
+                });
+
+                // Draw highlighted indifference curve at current utility level
+                const targetUtility = params.utilityLevel || 5;
+                const highlightedIC = utilityFn.generateIndifferenceCurve(targetUtility, visualConfig.maxX, visualConfig.maxY, params);
+
+                if (highlightedIC.curveType === 'L-shaped' && highlightedIC.metadata) {
+                    CanvasUtils.drawLShape(ctx, highlightedIC.metadata.cornerX, highlightedIC.metadata.cornerY, visualConfig.maxX, visualConfig.maxY, transform, {
+                        color: '#1e40af',
+                        lineWidth: 3
+                    });
+                } else if (highlightedIC.points && highlightedIC.points.length > 0) {
+                    CanvasUtils.drawCurve(ctx, highlightedIC.points, transform, {
+                        color: '#1e40af',
+                        lineWidth: 3
+                    });
+                }
+
+                // Highlight current point
+                const currentX = params.goodXLevel || 3;
+                const currentY = params.goodYLevel || 3;
+                CanvasUtils.highlightPoint(ctx, currentX, currentY, transform, {
+                    outerColor: '#dc2626',
+                    innerColor: '#ffffff'
+                });
+
+                CanvasUtils.restoreClipping(ctx);
+            }, [selectedUtilityFunction, params]);
+
+
+            const renderUtilityVsXSection = useCallback((ctx, width, height, margins) => {
+                const funcConfig = UtilConfig.utilityFunctions[selectedUtilityFunction];
+                const visualConfig = funcConfig.config.crossSectionView;
+                const fixedY = params.goodYLevel || 3;
+
+                // Generate cross-section curve
+                const crossSection = UtilityMath.generateCrossSection(
+                    selectedUtilityFunction, params, 'Y', fixedY, visualConfig.maxInput
+                );
+
+                if (crossSection && crossSection.length > 0) {
+                    const transform = CanvasUtils.createTransform(margins, width, height, visualConfig.maxInput, visualConfig.maxUtility);
+
+                    // Draw coordinate system
+                    const gridConfig = {
+                        xPoints: visualConfig.gridPoints.x,
+                        yPoints: visualConfig.gridPoints.y
+                    };
+
+                    CanvasUtils.drawGrid(ctx, margins, width, height, transform, gridConfig);
+                    CanvasUtils.drawAxes(ctx, margins, width, height, 'Good X', 'Utility (U)');
+                    CanvasUtils.drawTicks(ctx, margins, width, height, transform, gridConfig);
+
+                    CanvasUtils.setupClipping(ctx, margins, width, height);
+
+                    // Draw curve
+                    const curvePoints = crossSection.map(point => ({ x: point.input, y: point.utility }));
+                    CanvasUtils.drawCurve(ctx, curvePoints, transform, {
+                        color: '#059669',
+                        lineWidth: 3
+                    });
+
+                    // Highlight current point
+                    const currentX = params.goodXLevel || 3;
+                    const currentUtility = utilityAnalysis.currentUtility;
+                    CanvasUtils.highlightPoint(ctx, currentX, currentUtility, transform, {
+                        outerColor: '#dc2626',
+                        innerColor: '#ffffff'
+                    });
+
+                    CanvasUtils.restoreClipping(ctx);
+                }
+            }, [selectedUtilityFunction, params, utilityAnalysis]);
+
+
+            const renderUtilityVsYSection = useCallback((ctx, width, height, margins) => {
+                const funcConfig = UtilConfig.utilityFunctions[selectedUtilityFunction];
+                const visualConfig = funcConfig.config.crossSectionView;
+                const fixedX = params.goodXLevel || 3;
+
+                // Generate cross-section curve
+                const crossSection = UtilityMath.generateCrossSection(
+                    selectedUtilityFunction, params, 'X', fixedX, visualConfig.maxInput
+                );
+
+                if (crossSection && crossSection.length > 0) {
+                    const transform = CanvasUtils.createTransform(margins, width, height, visualConfig.maxInput, visualConfig.maxUtility);
+
+                    // Draw coordinate system
+                    const gridConfig = {
+                        xPoints: visualConfig.gridPoints.x,
+                        yPoints: visualConfig.gridPoints.y
+                    };
+
+                    CanvasUtils.drawGrid(ctx, margins, width, height, transform, gridConfig);
+                    CanvasUtils.drawAxes(ctx, margins, width, height, 'Good Y', 'Utility (U)');
+                    CanvasUtils.drawTicks(ctx, margins, width, height, transform, gridConfig);
+
+                    CanvasUtils.setupClipping(ctx, margins, width, height);
+
+                    // Draw curve
+                    const curvePoints = crossSection.map(point => ({ x: point.input, y: point.utility }));
+                    CanvasUtils.drawCurve(ctx, curvePoints, transform, {
+                        color: '#dc2626',
+                        lineWidth: 3
+                    });
+
+                    // Highlight current point
+                    const currentY = params.goodYLevel || 3;
+                    const currentUtility = utilityAnalysis.currentUtility;
+                    CanvasUtils.highlightPoint(ctx, currentY, currentUtility, transform, {
+                        outerColor: '#dc2626',
+                        innerColor: '#ffffff'
+                    });
+
+                    CanvasUtils.restoreClipping(ctx);
+                }
+            }, [selectedUtilityFunction, params, utilityAnalysis]);
+
+
+            return React.createElement('div', {
+                className: "min-h-screen p-6"
+            }, [
+                // Header
+                React.createElement('div', {
+                    key: 'header',
+                    className: "text-center mb-4"
+                }, [
+                    React.createElement('h1', {
+                        key: 'title',
+                        className: "text-3xl font-bold text-gray-800 mb-2"
+                    }, 'Utility Function Visualization')
+                ]),
+
+                // Main content grid
+                React.createElement('div', {
+                    key: 'content',
+                    className: "grid grid-cols-1 lg:grid-cols-3 gap-3 max-w-7xl mx-auto"
+                }, [
+                    // Left column: Parameter controls
+                    React.createElement('div', {
+                        key: 'controls',
+                        className: "space-y-3"
+                    }, [
+                        // Utility Function Selector
+                        React.createElement('div', {
+                            key: 'function-selector',
+                            className: "bg-white p-4 rounded-lg shadow-sm border"
+                        }, [
+                            React.createElement('h3', {
+                                key: 'selector-title',
+                                className: "text-lg font-semibold text-gray-700 mb-4"
+                            }, 'Utility Function'),
+                            React.createElement('select', {
+                                key: 'function-dropdown',
+                                value: selectedUtilityFunction,
+                                onChange: (e) => setSelectedUtilityFunction(e.target.value),
+                                className: "w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            },
+                                Object.keys(UtilConfig.utilityFunctions).map(funcKey =>
+                                    React.createElement('option', {
+                                        key: funcKey + '-option',
+                                        value: funcKey
+                                    }, UtilConfig.utilityFunctions[funcKey].name)
+                                )
+                            )
+                        ]),
+
+                        // Analysis Parameters panel
+                        React.createElement('div', {
+                            key: 'analysis-parameters',
+                            className: "bg-white p-4 rounded-lg shadow-sm border"
+                        }, [
+                            React.createElement('div', {
+                                key: 'analysis-param-header',
+                                className: "flex justify-between items-center mb-4"
+                            }, [
+                                React.createElement('h3', {
+                                    key: 'analysis-param-title',
+                                    className: "text-lg font-semibold text-gray-700"
+                                }, 'Utility/Good Levels'),
+                                React.createElement('button', {
+                                    key: 'reset-analysis-button',
+                                    onClick: resetAnalysisParams,
+                                    className: "text-sm px-2 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors"
+                                }, 'Reset')
+                            ]),
+                            React.createElement('div', {
+                                key: 'analysis-param-controls',
+                                className: "space-y-3"
+                            }, renderAnalysisParameterControls())
+                        ]),
+
+                        // Utility Function Parameters panel
+                        React.createElement('div', {
+                            key: 'utility-parameters',
+                            className: "bg-white p-4 rounded-lg shadow-sm border"
+                        }, [
+                            React.createElement('div', {
+                                key: 'util-param-header',
+                                className: "flex justify-between items-center mb-4"
+                            }, [
+                                React.createElement('h3', {
+                                    key: 'util-param-title',
+                                    className: "text-lg font-semibold text-gray-700"
+                                }, 'Utility Function Parameters'),
+                                React.createElement('button', {
+                                    key: 'reset-util-button',
+                                    onClick: resetUtilityParams,
+                                    className: "text-sm px-2 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors"
+                                }, 'Reset')
+                            ]),
+                            React.createElement('div', {
+                                key: 'equation-display',
+                                className: "text-center mb-4 p-2 bg-gray-50 rounded"
+                            }, renderEquationDisplay()),
+                            React.createElement('div', {
+                                key: 'util-param-controls',
+                                className: "space-y-3"
+                            }, renderUtilityParameterControls())
+                        ])
+                    ]),
+
+                    // Center column: 3D visualization
+                    React.createElement('div', {
+                        key: 'center-container',
+                        className: "space-y-3"
+                    }, [
+                        // 3D utility surface visualization
+                        React.createElement('div', {
+                            key: '3d-viz',
+                            className: "bg-white p-4 rounded-lg shadow-sm border"
+                        }, [
+                            React.createElement('div', {
+                                key: '3d-header',
+                                className: "mb-4"
+                            }, [
+                                React.createElement('h3', {
+                                    key: '3d-title',
+                                    className: "text-lg font-semibold text-gray-700 mb-2"
+                                }, 'Utility Function (3D View)'),
+
+                                React.createElement('div', {
+                                    key: '3d-controls',
+                                    className: "flex gap-2"
+                                }, [
+                                    React.createElement('button', {
+                                        key: 'toggle-plane-button',
+                                        onClick: () => setPlanesVisible(!planesVisible),
+                                        className: planesVisible
+                                            ? "text-sm px-3 py-1 border border-blue-400 rounded text-white bg-blue-500 hover:bg-blue-600 transition-colors"
+                                            : "text-sm px-3 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors"
+                                    }, planesVisible ? 'Hide 2D Slice Plane' : 'Show 2D Slice Plane'),
+                                    React.createElement('button', {
+                                        key: 'reset-3d-button',
+                                        onClick: () => {
+                                            if (camera3D && controls3D) {
+                                                CanvasUtils.reset3DView(camera3D, controls3D, UtilConfig.scene3D.camera.position, UtilConfig.scene3D.camera.target);
+                                            }
+                                        },
+                                        className: "text-sm px-3 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors"
+                                    }, 'Reset View')
+                                ])
+                            ]),
+
+                            React.createElement('div', {
+                                key: '3d-container',
+                                ref: scene3DRef,
+                                style: { width: UtilConfig.layout.canvas3D.width + 'px', height: UtilConfig.layout.canvas3D.height + 'px', margin: '0 auto' }
+                            }),
+
+                            // 3D controls instructions
+                            React.createElement('div', {
+                                key: '3d-controls-help',
+                                className: "text-xs text-gray-500 text-center mt-2 italic"
+                            }, 'Drag to rotate • Scroll to zoom • Right-drag to pan'),
+
+                            // Explanatory note about utility function and slicing planes
+                            React.createElement('div', {
+                                key: 'utility-function-note',
+                                className: "text-sm text-gray-600 mt-4 p-2 bg-blue-50 rounded border-l-4 border-blue-200 space-y-2"
+                            }, [
+                                React.createElement('p', {
+                                    key: 'utility-explanation'
+                                }, 'The 3D utility surface shows how utility varies with consumption of two goods. Higher points on the surface represent greater satisfaction.'),
+                                React.createElement('p', {
+                                    key: 'slicing-explanation'
+                                }, 'The slicing plane reveals different relationships: horizontal slices show indifference curves (constant utility), while vertical slices show how utility changes with one good.')
+                            ])
+                        ])
+                    ]),
+
+                    // Right column: 2D analysis visualizations
+                    React.createElement('div', {
+                        key: 'analysis-viz',
+                        className: "space-y-3"
+                    }, [
+                        // Analysis mode selector
+                        React.createElement('div', {
+                            key: 'analysis-mode-selector',
+                            className: "bg-white p-4 rounded-lg shadow-sm border"
+                        }, [
+                            React.createElement('h3', {
+                                key: 'mode-title',
+                                className: "text-lg font-semibold text-gray-700 mb-4"
+                            }, '2D View Mode'),
+                            React.createElement('div', {
+                                key: 'analysis-mode-buttons',
+                                className: "flex gap-2"
+                            }, Object.keys(UtilConfig.analysisModes).map(modeKey =>
+                                React.createElement('button', {
+                                    key: `${modeKey}-button`,
+                                    onClick: () => setSelectedAnalysisMode(modeKey),
+                                    className: `analysis-button ${selectedAnalysisMode === modeKey ? 'active' : ''}`
+                                }, UtilConfig.analysisModes[modeKey].buttonLabel)
+                            )),
+
+                            // Explanatory note about 2D view controls
+                            React.createElement('div', {
+                                key: '2d-controls-note',
+                                className: "text-sm text-gray-600 mt-4 p-2 bg-blue-50 rounded border-l-4 border-blue-200"
+                            }, 'Select a view mode. Use Utility/Good controls to adjust the highlighted level.')
+                        ]),
+
+                        // Top analysis visualization (independent panel)
+                        React.createElement('div', {
+                            key: 'top-analysis-viz',
+                            className: "bg-white p-4 rounded-lg shadow-sm border"
+                        }, [
+                            React.createElement('h3', {
+                                key: 'top-title',
+                                className: "text-lg font-semibold text-gray-700 mb-2"
+                            }, UtilConfig.analysisModes[selectedAnalysisMode]?.topView?.name || 'Primary View'),
+
+                            // Dynamic explanatory text based on analysis mode
+                            React.createElement('div', {
+                                key: 'explanation-text',
+                                className: "text-sm text-gray-600 mb-4 p-2 bg-blue-50 rounded border-l-4 border-blue-200"
+                            }, (() => {
+                                let explanation = '';
+                                switch(selectedAnalysisMode) {
+                                    case 'indifference-map':
+                                        const utilityLevel = params.utilityLevel || 5;
+                                        explanation = `Bundles of goods that provide the same utility level. The highlighted curve corresponds to the utility level of ${utilityLevel.toFixed(1)}. The slope of the indifference curve is the Marginal Rate of Substitution (MRS).`;
+                                        break;
+                                    case 'x-section':
+                                        const fixedY = params.goodYLevel || 3;
+                                        explanation = `How utility changes as Good X increases, holding Good Y constant at ${fixedY.toFixed(1)} units. The slope is the marginal utility of X.`;
+                                        break;
+                                    case 'y-section':
+                                        const fixedX = params.goodXLevel || 3;
+                                        explanation = `How utility changes as Good Y increases, holding Good X constant at ${fixedX.toFixed(1)} units. The slope is the marginal utility of Y.`;
+                                        break;
+                                }
+                                return explanation;
+                            })()),
+
+                            React.createElement('canvas', {
+                                key: 'top-analysis-canvas',
+                                ref: topAnalysisRef,
+                                width: UtilConfig.layout.analysisCanvas.topCanvas.width,
+                                height: UtilConfig.layout.analysisCanvas.topCanvas.height
+                            })
+                        ]),
+
+                    ])
+                ])
+            ]);
+        };
+
+        // Initialize app after all scripts are loaded
+        const initializeApp = () => {
+            console.log('Checking for required modules...');
+            console.log('UtilConfig:', !!window.UtilConfig);
+            console.log('UtilityMath:', !!window.UtilityMath);
+            console.log('CanvasUtils:', !!window.CanvasUtils);
+            console.log('THREE:', !!window.THREE);
+
+            if (window.UtilConfig && window.UtilityMath && window.CanvasUtils && window.THREE) {
+                console.log('All modules loaded, initializing React app...');
+                try {
+                    const root = ReactDOM.createRoot(document.getElementById('root'));
+                    root.render(React.createElement(UtilityVisualization));
+                    console.log('React app rendered successfully!');
+                } catch (error) {
+                    console.error('Error rendering React app:', error);
+                }
+            } else {
+                console.log('Waiting for modules to load...');
+                setTimeout(initializeApp, 100);
+            }
+        };
+
+        // Start initialization
+        initializeApp();
+    </script>
+</body>
+</html>
