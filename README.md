@@ -129,6 +129,10 @@ Visualizes cost minimization for firms - finding the least-cost combination of i
 
 ---
 
+## Build Your Own
+
+The [`econ-viz-builder/`](econ-viz-builder/) folder contains a **skill**: plain-text instructions an AI coding agent (e.g., Claude Code or Codex) can follow to build a new interactive teaching visualization as a single portable HTML file. It codifies the workflow that emerged from developing the seven tools above — the architecture, visual conventions, and verification steps. See its [README](econ-viz-builder/README.md) to get started.
+
 ## About
 
 These tools use modern web technologies (React, Three.js, Canvas) to provide interactive visualizations of economic concepts. No installation required - all tools run directly in your browser.
